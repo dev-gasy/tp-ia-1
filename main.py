@@ -9,7 +9,8 @@ This script runs the complete project workflow:
 2. Model Training
 3. KPI Calculation
 4. Visualization Generation
-5. Model Deployment (optional)
+5. Ethics and Governance Analysis
+6. Model Deployment (optional)
 """
 
 import os
@@ -82,10 +83,32 @@ def run_visualization_generation():
         return False
 
 
+def run_ethics_governance():
+    """Run the ethics governance analysis and visualizations."""
+    print("\n" + "="*80)
+    print("STEP 5: ETHICS AND GOVERNANCE ANALYSIS")
+    print("="*80)
+    
+    try:
+        # Generate ethics visualizations
+        from scripts import generate_ethics_visualizations
+        generate_ethics_visualizations.main()
+        
+        # Run ethics governance analysis
+        from scripts import ethics_governance
+        ethics_governance.main()
+        
+        print("Ethics and governance analysis completed successfully!")
+        return True
+    except Exception as e:
+        print(f"Error during ethics and governance analysis: {str(e)}")
+        return False
+
+
 def run_model_deployment(run_in_background=True):
     """Run the model deployment script."""
     print("\n" + "="*80)
-    print("STEP 5: MODEL DEPLOYMENT")
+    print("STEP 6: MODEL DEPLOYMENT")
     print("="*80)
     
     try:
@@ -139,6 +162,7 @@ def main():
     parser.add_argument('--skip-training', action='store_true', help='Skip the model training step')
     parser.add_argument('--skip-kpi', action='store_true', help='Skip the KPI calculation step')
     parser.add_argument('--skip-visualization', action='store_true', help='Skip the visualization generation step')
+    parser.add_argument('--skip-ethics', action='store_true', help='Skip the ethics and governance analysis step')
     parser.add_argument('--deploy', action='store_true', help='Run the model deployment step')
     parser.add_argument('--foreground', action='store_true', help='Run deployment in foreground instead of background')
     
@@ -149,7 +173,7 @@ def main():
     print("*"*80)
     
     # Create necessary directories
-    for directory in ['data', 'output', 'models']:
+    for directory in ['data', 'output', 'models', 'output/ethics', 'logs']:
         os.makedirs(directory, exist_ok=True)
     
     # Track successful steps
@@ -158,6 +182,7 @@ def main():
         "Model Training": None,
         "KPI Calculation": None,
         "Visualization Generation": None,
+        "Ethics and Governance": None,
         "Model Deployment": None
     }
     
@@ -193,6 +218,15 @@ def main():
             print("\nSkipping visualization generation because previous steps failed...")
     else:
         print("\nSkipping visualization generation step...")
+    
+    # Run ethics and governance analysis
+    if not args.skip_ethics:
+        if args.skip_visualization or steps_success["Visualization Generation"] or args.skip_kpi:
+            steps_success["Ethics and Governance"] = run_ethics_governance()
+        else:
+            print("\nSkipping ethics and governance analysis because previous steps failed...")
+    else:
+        print("\nSkipping ethics and governance analysis step...")
     
     # Run model deployment
     if args.deploy:
