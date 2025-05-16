@@ -4,15 +4,17 @@ Cette première phase du cycle de vie d'un projet en intelligence artificielle e
 
 ## 1.1 Compréhension du contexte d'affaires
 
-Le contexte de ce mandat est centré sur l'amélioration de l'efficacité opérationnelle au sein du service des réclamations d'une compagnie d'assurances vie. L'objectif est de faciliter le processus d'attribution des cas d'invalidités futurs aux employés de ce service.
+Le contexte de ce mandat est centré sur l'amélioration de l'efficacité opérationnelle au sein du service des réclamations d'une compagnie d'assurances vie. Actuellement, l'attribution des dossiers d'invalidité aux employés se fait sans tenir compte de la complexité potentielle des cas, ce qui entraîne une allocation sous-optimale des ressources humaines.
 
-Actuellement, cette attribution se fait potentiellement de manière suboptimale. Une meilleure distribution des cas, basée sur la complexité estimée de l'invalidité et l'expérience des employés, pourrait améliorer :
+La problématique principale réside dans la prédiction de la durée probable d'une invalidité dès l'ouverture du dossier, afin d'orienter son attribution vers l'employé dont le niveau d'expérience correspond à la complexité anticipée. En effet, les cas d'invalidité de longue durée (supérieure à 180 jours) nécessitent une expertise plus approfondie et devraient être confiés aux employés expérimentés, tandis que les cas de courte durée peuvent être gérés efficacement par des employés moins expérimentés.
 
-- Le temps de traitement
-- La satisfaction des assurés
-- L'efficacité globale du service
+Une meilleure distribution des cas, basée sur cette prédiction de durée, permettrait d'améliorer :
 
-La solution développée sera un outil d'aide à la décision, utilisé par le service des réclamations, potentiellement par les gestionnaires ou directement par les employés lors de l'ouverture d'un nouveau dossier de réclamation. L'attribution se ferait ainsi au moment où les informations initiales sur l'invalidité sont disponibles.
+- Le temps de traitement des dossiers (réduction des délais)
+- La satisfaction des assurés grâce à une prise en charge plus adaptée
+- L'efficacité globale du service par une utilisation optimale des compétences disponibles
+
+La solution développée sera un outil d'aide à la décision, utilisé par les gestionnaires ou directement par les employés lors de l'ouverture d'un nouveau dossier. Ce système de classification interviendrait dès la réception des informations initiales sur l'invalidité, optimisant ainsi l'ensemble du processus de traitement des réclamations.
 
 ## 1.2 Définition des objectifs
 

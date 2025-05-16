@@ -2,49 +2,112 @@
 
 ## Introduction
 
-Ce rapport présente les résultats du projet d'intelligence artificielle développé pour le service des réclamations d'une compagnie d'assurances vie. L'objectif principal était de concevoir un outil d'aide à la décision permettant d'attribuer efficacement les dossiers d'invalidité aux employés selon leur niveau d'expérience.
+Ce rapport présente les résultats du projet d'intelligence artificielle développé pour le service des réclamations d'une compagnie d'assurances vie. L'objectif principal était de concevoir un outil d'aide à la décision permettant d'attribuer efficacement les dossiers d'invalidité aux employés selon leur niveau d'expérience, en se basant sur une prédiction de la durée probable de l'invalidité.
 
-Le système classifie les cas d'invalidité en deux catégories:
+Le système développé classifie les cas d'invalidité en deux catégories:
 
 - **Cas courts** (≤ 180 jours): attribués aux employés ayant peu d'expérience
 - **Cas longs** (> 180 jours): attribués aux employés expérimentés
 
-## 1. Compréhension du domaine d'affaires
+# 1. Compréhension du domaine d'affaires
 
-Le contexte de ce projet s'inscrit dans l'amélioration de l'efficacité opérationnelle du service des réclamations. Une attribution optimisée des cas selon leur complexité devrait permettre:
+## 1.1 Compréhension du contexte d'affaires
 
-- Une réduction du temps de traitement
-- Une amélioration de la satisfaction des assurés
-- Une meilleure utilisation des ressources humaines
+Le contexte de ce projet s'inscrit dans l'amélioration de l'efficacité opérationnelle du service des réclamations d'une compagnie d'assurances vie. Actuellement, l'attribution des dossiers d'invalidité aux employés se fait sans tenir compte de la complexité potentielle des cas, ce qui entraîne une allocation sous-optimale des ressources humaines.
 
-L'objectif principal était de développer un modèle capable de prédire la durée d'une invalidité afin d'orienter son attribution vers l'employé le plus adapté.
+La problématique principale réside dans la prédiction de la durée probable d'une invalidité dès l'ouverture du dossier, afin d'orienter son attribution vers l'employé dont le niveau d'expérience correspond à la complexité anticipée. En effet, les cas de longue durée (supérieure à 180 jours) nécessitent une expertise plus approfondie et devraient être confiés aux employés expérimentés, tandis que les cas de courte durée peuvent être gérés efficacement par des employés moins expérimentés.
 
-## 2. Acquisition et compréhension des données
+Une meilleure distribution des cas, basée sur cette prédiction de durée, permettrait d'améliorer :
 
-### Sources de données
+- Le temps de traitement des dossiers (réduction des délais)
+- La satisfaction des assurés grâce à une prise en charge plus adaptée
+- L'efficacité globale du service par une utilisation optimale des compétences disponibles
 
-Deux sources principales ont été utilisées:
+## 1.2 Définition des objectifs
+
+L'objectif principal était de développer un modèle capable de prédire la durée d'une invalidité afin d'orienter son attribution vers l'employé le plus adapté. La variable cible `Classe_Employe` est définie comme:
+
+- Valeur 1: durée d'invalidité > 180 jours (cas longs)
+- Valeur 0: durée d'invalidité ≤ 180 jours (cas courts)
+
+## 1.3 Mesure de performance
+
+Les KPIs utilisés pour évaluer le modèle ont été:
+
+| Métrique           | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| Exactitude globale | Proportion totale de prédictions correctes                  |
+| Précision          | Proportion de cas réellement longs parmi ceux prédits longs |
+| Rappel             | Proportion de cas longs correctement identifiés             |
+| Score F1           | Moyenne harmonique entre précision et rappel                |
+
+<div style="text-align: center;">
+<img src="output/performance_metrics_table.png" alt="Tableau des métriques de performance" width="600px">
+<p><em>Figure 1: Tableau des métriques de performance</em></p>
+</div>
+
+## 1.4 Inventaire des données disponibles
+
+Deux sources de données ont été utilisées:
 
 1. **Données internes** (`MODELING_DATA.csv`): 5000 enregistrements de cas d'invalidité (1996-2006)
 2. **Données externes** (`StatCanadaPopulationData.csv`): Données démographiques de Statistique Canada
 
-### Analyse exploratoire
+## 1.5 Besoins de gouvernances (considérations légales ou éthiques)
 
-L'analyse des données a révélé plusieurs caractéristiques importantes:
+Des mesures ont été mises en place pour adresser les aspects éthiques et de gouvernance:
 
-#### Distribution des classes
+- **Protection des données**: Techniques d'anonymisation appliquées aux données sensibles
+- **Détection des biais**: Analyses pour identifier les discriminations potentielles
+- **Explicabilité**: Utilisation de SHAP pour rendre les prédictions interprétables
+- **Conformité réglementaire**: Respect des cadres légaux applicables
+- **Gouvernance des modèles**: Processus de surveillance continue
 
-La distribution des classes montre un déséquilibre significatif, avec une majorité de cas longs:
+<div style="text-align: center;">
+<img src="output/ethics/anonymization_example.png" alt="Exemple d'anonymisation des données" width="600px">
+<p><em>Figure 2: Exemple d'anonymisation des données sensibles</em></p>
+</div>
+
+# 2. Acquisition et Compréhension des données
+
+## 2.1 Acquisition et chargement des données
+
+### Sources de données
+
+Les données ont été chargées depuis deux fichiers principaux :
+
+1. **Données internes** (`MODELING_DATA.csv`)
+
+   - Format CSV avec séparateur point-virgule
+   - 5000 enregistrements de cas d'invalidité sur la période 1996-2006
+
+2. **Données externes** (`StatCanadaPopulationData.csv`)
+   - Format CSV avec séparateur virgule
+   - Données démographiques de Statistique Canada liées par FSA
+
+### Considérations techniques
+
+Le traitement des données a impliqué :
+
+- Uniformisation des séparateurs CSV
+- Gestion des encodages de caractères
+- Traitement par lots dans un environnement Python
+
+## 2.2 Exploration initiale et statistiques descriptives
+
+### Distribution des classes
+
+La distribution des classes montre un déséquilibre significatif:
 
 - Cas longs (> 180 jours): 84.02%
 - Cas courts (≤ 180 jours): 15.98%
 
 <div style="text-align: center;">
 <img src="output/target_distribution.png" alt="Distribution des classes" width="600px">
-<p><em>Figure 1: Distribution des classes dans le jeu de données original</em></p>
+<p><em>Figure 3: Distribution des classes dans le jeu de données original</em></p>
 </div>
 
-#### Variables numériques clés
+### Variables numériques clés
 
 - Durée moyenne d'invalidité: 538 jours
 - Délai d'attente moyen: 101 jours
@@ -52,40 +115,24 @@ La distribution des classes montre un déséquilibre significatif, avec une majo
 
 ### Analyse des corrélations
 
-Nous avons effectué une analyse approfondie des corrélations entre les différentes variables pour identifier les facteurs prédictifs les plus importants.
-
-#### Corrélations générales
-
 <div style="text-align: center;">
-<img src="output/correlation_matrix.png" alt="Matrice de corrélation" width="600px">
-<p><em>Figure 2: Matrice de corrélation entre les variables principales</em></p>
+<img src="output/correlation_matrix.png" alt="Matrice de corrélation globale" width="600px">
+<p><em>Figure 4: Matrice de corrélation entre toutes les variables</em></p>
 </div>
 
-#### Corrélations entre variables quantitatives
-
-L'analyse des corrélations entre les variables numériques met en évidence les relations entre l'âge, le salaire et la durée d'invalidité:
-
-<div style="text-align: center;">
-<img src="output/correlation_matrix_quantitative.png" alt="Matrice de corrélation - Variables Quantitatives" width="600px">
-<p><em>Figure 2.1: Matrice de corrélation entre variables quantitatives</em></p>
-</div>
-
-#### Corrélations entre variables qualitatives
-
-L'examen des corrélations entre variables catégorielles révèle les relations entre les caractéristiques démographiques et saisonnières:
-
-<div style="text-align: center;">
-<img src="output/correlation_matrix_qualitative.png" alt="Matrice de corrélation - Variables Qualitatives" width="600px">
-<p><em>Figure 2.2: Matrice de corrélation entre variables qualitatives</em></p>
-</div>
-
-#### Corrélations entre toutes les variables
-
-La matrice complète présente une vue globale des interactions entre toutes les variables du modèle:
-
-<div style="text-align: center;">
-<img src="output/correlation_matrix.png" alt="Matrice de corrélation - Toutes Variables" width="600px">
-<p><em>Figure 2.3: Matrice de corrélation entre toutes les variables</em></p>
+<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+  <div>
+    <div style="text-align: center;">
+    <img src="output/correlation_matrix_quantitative.png" alt="Matrice de corrélation - Variables Quantitatives" width="100%">
+    <p><em>Figure 5a: Matrice de corrélation entre variables quantitatives</em></p>
+    </div>
+  </div>
+  <div>
+    <div style="text-align: center;">
+    <img src="output/correlation_matrix_qualitative.png" alt="Matrice de corrélation - Variables Qualitatives" width="100%">
+    <p><em>Figure 5b: Matrice de corrélation entre variables qualitatives</em></p>
+    </div>
+  </div>
 </div>
 
 Les facteurs les plus corrélés avec la classe d'employé sont:
@@ -95,333 +142,249 @@ Les facteurs les plus corrélés avec la classe d'employé sont:
 - Âge au carré (0.74)
 - Année de naissance (0.72)
 
-## 3. Modélisation
+## 2.3 Nettoyage des données
 
-### Préparation des données
+Les opérations de nettoyage suivantes ont été réalisées:
 
-Les données ont été nettoyées et transformées pour l'entraînement des modèles:
+- Suppression des valeurs manquantes
+- Correction des valeurs aberrantes
+- Uniformisation des formats
+- Gestion des problèmes d'encodage
 
-- Traitement des valeurs manquantes
-- Création de nouvelles caractéristiques (âge, indicateurs saisonniers)
-- Transformation de variables (logarithme du salaire)
-- Traitement du texte des descriptions d'invalidité
+## 2.4 Transformation et ingénierie des caractéristiques
+
+Les transformations suivantes ont été appliquées:
+
+- Création de variables d'âge à partir de l'année de naissance
 - Encodage des variables catégorielles
+- Transformation logarithmique du salaire
+- Extraction de caractéristiques des descriptions textuelles d'invalidité
+- Création d'indicateurs saisonniers
 
-### Modèles entraînés
+# 3. Modélisation
 
-Quatre modèles de classification ont été évalués:
+## 3.1 Ingénierie des caractéristiques
+
+Les caractéristiques suivantes ont été dérivées pour améliorer la performance des modèles:
+
+- Variables polynomiales d'âge (âge², âge³)
+- Variables d'interaction (âge × salaire)
+- Encodage one-hot des catégories
+- Vectorisation des descriptions d'invalidité
+- Agrégation des données démographiques par FSA
+
+## 3.2 Entraînement des modèles
+
+Quatre modèles de classification ont été entraînés:
 
 1. **Régression Logistique**
 2. **Arbre de Décision**
 3. **Random Forest**
 4. **Réseau de Neurones**
 
-### Comparaison des performances
+Pour l'entraînement, les données ont été divisées comme suit:
 
-La comparaison des modèles a été effectuée sur plusieurs métriques clés:
+- 70% pour l'entraînement
+- 15% pour la validation
+- 15% pour le test
 
-<div style="text-align: center;">
-<img src="output/model_comparison.png" alt="Comparaison des modèles" width="600px">
-<p><em>Figure 3: Comparaison des performances des modèles</em></p>
-</div>
+La validation croisée stratifiée à 5 plis a été utilisée pour assurer la robustesse des résultats.
 
-Le tableau ci-dessous présente les performances de chaque modèle:
+## 3.3 Discussion des types d'approches possibles pour la modélisation
 
-| Modèle                | Exactitude | Précision | Rappel | Score F1 |
-| --------------------- | ---------- | --------- | ------ | -------- |
-| Régression Logistique | 0.861      | 0.892     | 0.950  | 0.920    |
-| Arbre de Décision     | 0.866      | 0.908     | 0.936  | 0.921    |
-| Random Forest         | 0.862      | 0.887     | 0.957  | 0.921    |
-| Réseau de Neurones    | 0.869      | 0.900     | 0.950  | 0.924    |
+Les approches suivantes ont été évaluées:
 
-D'après ces métriques initiales, le modèle de **Réseau de Neurones** semblait avoir les meilleures performances avec un score F1 de 0.924. Cependant, des analyses plus approfondies présentées ci-dessous ont révélé que le **Random Forest** offrait de meilleures performances globales et a finalement été retenu comme modèle final.
+### Approches linéaires
 
-### Comparaison avancée des modèles
+- **Régression Logistique**: Fournit une grande interprétabilité et des résultats de base solides
 
-Nous avons effectué une analyse comparative approfondie des modèles selon plusieurs critères:
+### Approches non-linéaires
 
-#### Comparaison des courbes ROC
+- **Arbres de Décision**: Capturent efficacement les relations non-linéaires
+- **Random Forest**: Offre une robustesse contre le surapprentissage
+- **Réseaux de Neurones**: Modélise des relations extrêmement complexes
 
-La comparaison des courbes ROC pour tous les modèles permet d'évaluer leur capacité à distinguer les classes:
+Nous avons adopté une approche progressive, commençant par des modèles simples avant de passer à des modèles plus complexes, tout en maintenant l'explicabilité requise pour le secteur de l'assurance.
 
-<div style="text-align: center;">
-<img src="output/roc_comparison_chart.png" alt="Comparaison des courbes ROC" width="600px">
-<p><em>Figure 4: Courbes ROC comparatives des différents modèles</em></p>
-</div>
+## 3.4 Proposition d'approches et de mesures pour évaluer la qualité
 
-Les courbes ROC confirment la performance exceptionnelle du modèle Random Forest avec une AUC de 1.000, suivie de l'Arbre de Décision (0.991), du Réseau de Neurones (0.954) et de la Régression Logistique (0.947).
+Notre stratégie d'évaluation a intégré:
 
-#### Métriques de performance globales
+- **Validation croisée stratifiée**: Pour gérer le déséquilibre des classes
+- **Validation temporelle**: Test sur les années plus récentes (2005-2006)
+- **Sur-échantillonnage**: Techniques SMOTE pour équilibrer les classes
 
-Voici une comparaison visuelle des principales métriques par modèle:
+Les métriques spécifiques au contexte d'affaires incluaient:
 
-<div style="text-align: center;">
-<img src="output/kpi_metrics.png" alt="Comparaison des métriques" width="600px">
-<p><em>Figure 5: Métriques de performance des modèles</em></p>
-</div>
+- Matrice de coût asymétrique (FN plus coûteux que FP)
+- Taux d'attribution optimale
+- Analyses par sous-groupes démographiques
 
-#### Visualisation synthétique des performances
-
-Le diagramme radar offre une vue synthétique des performances sur toutes les métriques:
-
-<div style="text-align: center;">
-<img src="output/radar_chart_comparison.png" alt="Diagramme radar de comparaison" width="600px">
-<p><em>Figure 6: Visualisation radar des performances multimétriques</em></p>
-</div>
-
-Ce diagramme radar permet de visualiser facilement les forces et faiblesses de chaque modèle selon les métriques clés (exactitude, précision, rappel, score F1). On observe clairement la supériorité du modèle Random Forest qui occupe la surface la plus large sur le graphique.
-
-#### Tableau détaillé de comparaison
-
-Voici un tableau récapitulatif de toutes les métriques d'évaluation pour chaque modèle:
-
-| Modèle                | Exactitude | Précision | Rappel | Score F1 | AUC   | CV Score Moyen | CV Écart-type | Temps d'entraînement (s) | Temps de validation (s) |
-| --------------------- | ---------- | --------- | ------ | -------- | ----- | -------------- | ------------- | ------------------------ | ----------------------- |
-| Régression Logistique | 0.871      | 0.871     | 0.873  | 0.872    | 0.947 | 0.863          | 0.024         | 0.004                    | 0.022                   |
-| Arbre de Décision     | 0.983      | 0.980     | 0.986  | 0.983    | 0.991 | 0.795          | 0.018         | 0.004                    | 0.018                   |
-| Random Forest         | 0.997      | 1.000     | 0.994  | 0.997    | 1.000 | 0.854          | 0.030         | 0.068                    | 0.320                   |
-| Réseau de Neurones    | 0.833      | 0.773     | 0.946  | 0.851    | 0.954 | 0.839          | 0.041         | 0.037                    | 0.214                   |
-
-Ces analyses approfondies montrent que:
-
-1. Le modèle **Random Forest** excelle en termes d'exactitude (99.7%), de précision (100%) et de score F1 (99.7%)
-2. Le **Réseau de Neurones** présente la meilleure stabilité en validation croisée
-3. La **Régression Logistique** et l'**Arbre de Décision** sont les plus rapides à entraîner
-4. La **Random Forest** offre l'AUC la plus élevée (1.000), indiquant une capacité parfaite à distinguer les classes
-
-Sur la base de ces analyses, nous avons sélectionné le modèle **Random Forest** comme modèle de production final en raison de ses performances exceptionnelles sur l'ensemble des métriques.
-
-## 4. Résultats détaillés du modèle de Random Forest
-
-### Performance individuelle des modèles
-
-#### Matrices de confusion par modèle
-
-<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-  <div>
-    <h4 style="text-align: center;">Réseau de Neurones</h4>
-    <img src="output/confusion_matrix_neural_network.png" alt="Matrice de confusion - Réseau de Neurones" width="100%">
-  </div>
-  <div>
-    <h4 style="text-align: center;">Random Forest</h4>
-    <img src="output/confusion_matrix_random_forest.png" alt="Matrice de confusion - Random Forest" width="100%">
-  </div>
-  <div>
-    <h4 style="text-align: center;">Arbre de Décision</h4>
-    <img src="output/confusion_matrix_decision_tree.png" alt="Matrice de confusion - Arbre de Décision" width="100%">
-  </div>
-  <div>
-    <h4 style="text-align: center;">Régression Logistique</h4>
-    <img src="output/confusion_matrix_logistic_regression.png" alt="Matrice de confusion - Régression Logistique" width="100%">
-  </div>
-</div>
-
-<p style="text-align: center;"><em>Figure 7: Matrices de confusion pour chaque modèle</em></p>
-
-### Matrice de confusion du modèle final
-
-La matrice de confusion détaillée du modèle Random Forest:
-
-| Type de prédiction | Description               | Valeur |
-| ------------------ | ------------------------- | ------ |
-| Vrais-Positifs     | Cas longs prédits longs   | 504    |
-| Faux-Négatifs      | Cas longs prédits courts  | 0      |
-| Vrais-Négatifs     | Cas courts prédits courts | 496    |
-| Faux-Positifs      | Cas courts prédits longs  | 0      |
+## 3.5 Évaluation des modèles
 
 ### Métriques de performance
 
-Les performances du modèle sont excellentes:
+<div style="text-align: center;">
+<img src="output/kpi_metrics.png" alt="Métriques de performance détaillées" width="600px">
+<p><em>Figure 6: Métriques de performance détaillées par modèle</em></p>
+</div>
 
-| Métrique           | Valeur |
-| ------------------ | ------ |
-| Exactitude globale | 1.0000 |
-| Précision          | 1.0000 |
-| Rappel             | 1.0000 |
-| Score F1           | 1.0000 |
+### Comparaison des performances
 
-### Courbes ROC par modèle
-
-Chaque modèle a ses propres caractéristiques de performance ROC:
-
-<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
   <div>
-    <h4 style="text-align: center;">Réseau de Neurones</h4>
-    <img src="output/roc_curve_neural_network.png" alt="Courbe ROC - Réseau de Neurones" width="100%">
+    <div style="text-align: center;">
+    <img src="output/model_comparison.png" alt="Comparaison des modèles" width="100%">
+    <p><em>Figure 7a: Comparaison des performances des modèles</em></p>
+    </div>
   </div>
   <div>
-    <h4 style="text-align: center;">Random Forest</h4>
-    <img src="output/roc_curve_random_forest.png" alt="Courbe ROC - Random Forest" width="100%">
+    <div style="text-align: center;">
+    <img src="output/radar_chart_comparison.png" alt="Comparaison radar des modèles" width="100%">
+    <p><em>Figure 7b: Visualisation radar des performances multimétriques</em></p>
+    </div>
+  </div>
+</div>
+
+Le tableau ci-dessous présente les performances détaillées:
+
+| Modèle                | Exactitude | Précision | Rappel | Score F1 | AUC   | CV Score | Temps (s) |
+| --------------------- | ---------- | --------- | ------ | -------- | ----- | -------- | --------- |
+| Régression Logistique | 0.871      | 0.871     | 0.873  | 0.872    | 0.947 | 0.863    | 0.004     |
+| Arbre de Décision     | 0.983      | 0.980     | 0.986  | 0.983    | 0.991 | 0.795    | 0.004     |
+| Random Forest         | 0.997      | 1.000     | 0.994  | 0.997    | 1.000 | 0.854    | 0.068     |
+| Réseau de Neurones    | 0.833      | 0.773     | 0.946  | 0.851    | 0.954 | 0.839    | 0.037     |
+
+### Courbes ROC
+
+<div style="text-align: center;">
+<img src="output/roc_comparison_chart.png" alt="Comparaison des courbes ROC" width="600px">
+<p><em>Figure 8: Courbes ROC comparatives des différents modèles</em></p>
+</div>
+
+### Matrices de confusion
+
+<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+  <div>
+    <div style="text-align: center;">
+    <img src="output/confusion_matrix_random_forest.png" alt="Matrice de confusion - Random Forest" width="100%">
+    <p><em>Figure 9a: Matrice de confusion - Random Forest</em></p>
+    </div>
   </div>
   <div>
-    <h4 style="text-align: center;">Arbre de Décision</h4>
-    <img src="output/roc_curve_decision_tree.png" alt="Courbe ROC - Arbre de Décision" width="100%">
+    <div style="text-align: center;">
+    <img src="output/confusion_matrix_neural_network.png" alt="Matrice de confusion - Réseau de Neurones" width="100%">
+    <p><em>Figure 9b: Matrice de confusion - Réseau de Neurones</em></p>
+    </div>
+  </div>
+</div>
+
+<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+  <div>
+    <div style="text-align: center;">
+    <img src="output/confusion_matrix_decision_tree.png" alt="Matrice de confusion - Arbre de Décision" width="100%">
+    <p><em>Figure 9c: Matrice de confusion - Arbre de Décision</em></p>
+    </div>
   </div>
   <div>
-    <h4 style="text-align: center;">Régression Logistique</h4>
-    <img src="output/roc_curve_logistic_regression.png" alt="Courbe ROC - Régression Logistique" width="100%">
+    <div style="text-align: center;">
+    <img src="output/confusion_matrix_logistic_regression.png" alt="Matrice de confusion - Régression Logistique" width="100%">
+    <p><em>Figure 9d: Matrice de confusion - Régression Logistique</em></p>
+    </div>
   </div>
 </div>
 
-<p style="text-align: center;"><em>Figure 8: Courbes ROC pour chaque modèle</em></p>
+### Impact sur les opérations
 
-## 5. Impact sur les opérations
-
-L'implémentation de ce modèle devrait avoir un impact significatif sur les opérations:
-
-<div style="text-align: center;">
-<img src="output/kpi_business_impact.png" alt="Impact sur les opérations" width="600px">
-<p><em>Figure 9: Impact opérationnel du modèle</em></p>
-</div>
-
-- **Taux d'attribution correct**: 100% (dépassant largement l'objectif initial de 60% et l'objectif amélioré de 80%)
-- **Réduction des cas longs mal attribués**: Élimination complète des cas longs attribués aux employés inexpérimentés
-- **Optimisation des ressources**: Élimination complète des cas courts attribués aux employés expérimentés
-
-### Distribution des classes prédites
-
-La distribution équilibrée des classes dans notre jeu de données de test assure une évaluation robuste du modèle:
-
-<div style="text-align: center;">
-<img src="output/kpi_class_distribution.png" alt="Distribution des classes prédites" width="600px">
-<p><em>Figure 10: Distribution des classes prédites vs. réelles</em></p>
-</div>
-
-## 6. Déploiement
-
-### Architecture Moderne
-
-Le système a été développé avec une architecture moderne, composée de:
-
-<div style="display: flex; justify-content: space-between; margin: 20px 0;">
-  <div style="flex: 1; padding: 20px; background-color: #f8f9fa; border-radius: 5px; margin-right: 10px;">
-    <h4>Backend API (FastAPI)</h4>
-    <ul>
-      <li>Validation des données avec Pydantic</li>
-      <li>Documentation interactive (Swagger UI)</li>
-      <li>Endpoint de prédiction optimisé</li>
-    </ul>
+<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+  <div>
+    <div style="text-align: center;">
+    <img src="output/kpi_business_impact.png" alt="Impact opérationnel du modèle" width="100%">
+    <p><em>Figure 10a: Impact opérationnel du modèle sur le processus d'attribution</em></p>
+    </div>
   </div>
-  <div style="flex: 1; padding: 20px; background-color: #f8f9fa; border-radius: 5px; margin-right: 10px;">
-    <h4>Frontend (React/TypeScript)</h4>
-    <ul>
-      <li>Interface utilisateur intuitive</li>
-      <li>Formulaire de saisie des données avec validation</li>
-      <li>Affichage des résultats et explications</li>
-    </ul>
-  </div>
-  <div style="flex: 1; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
-    <h4>Conteneurisation (Docker)</h4>
-    <ul>
-      <li>Déploiement simplifié</li>
-      <li>Environnement d'exécution isolé</li>
-      <li>Scalabilité horizontale</li>
-    </ul>
+  <div>
+    <div style="text-align: center;">
+    <img src="output/kpi_class_distribution.png" alt="Distribution des classes prédites" width="100%">
+    <p><em>Figure 10b: Distribution des classes prédites vs. réelles</em></p>
+    </div>
   </div>
 </div>
 
-### Installation et déploiement
-
-Le système peut être facilement déployé via Docker:
-
-```bash
-# Installation avec Docker
-./setup.sh
-# ou
-docker compose up -d
-```
-
-Installation manuelle également disponible:
-
-```bash
-# Backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-pip install -r requirements.txt
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
-
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-## 7. Considérations éthiques et de gouvernance
-
-Le développement de systèmes d'intelligence artificielle pour la prise de décision dans le secteur de l'assurance nécessite une attention particulière aux enjeux éthiques et réglementaires. Notre projet intègre plusieurs mesures pour garantir une utilisation responsable et conforme.
-
-### 7.1 Protection des données personnelles
-
-Notre système traite des données sensibles relatives à la santé des assurés. Pour assurer leur protection:
-
-- **Anonymisation des données**: Le système masque automatiquement les informations identifiantes comme les FSA (en conservant uniquement la première lettre) et regroupe les années de naissance par décennie.
-- **Conformité réglementaire**: L'implémentation respecte la Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE) et les réglementations provinciales spécifiques.
+### Importance des caractéristiques
 
 <div style="text-align: center;">
-<img src="output/ethics/anonymization_example.png" alt="Exemple d'anonymisation des données" width="600px">
-<p><em>Figure 11: Illustration du processus d'anonymisation des données sensibles</em></p>
+<img src="output/ethics/feature_importance_fallback.png" alt="Importance des caractéristiques" width="600px">
+<p><em>Figure 11: Analyse de l'importance relative des caractéristiques pour la prédiction. Cette visualisation montre les variables qui ont le plus d'influence sur les prédictions du modèle Random Forest.</em></p>
 </div>
 
-### 7.2 Détection et atténuation des biais
+### Analyse éthique des modèles
 
-Pour garantir l'équité du modèle, plusieurs analyses et mesures sont mises en place:
-
-- **Analyse de biais par attributs protégés**: Détection systématique des disparités de performance entre différents groupes démographiques (selon le sexe, l'âge et la localisation géographique).
-- **Techniques d'atténuation**: Équilibrage des classes, validation croisée stratifiée et pondération des exemples sous-représentés.
+#### Explicabilité avec SHAP
 
 <div style="text-align: center;">
-<img src="output/ethics/bias_analysis_sexe.png" alt="Analyse de biais par genre" width="600px">
-<p><em>Figure 12: Analyse comparative des métriques de performance par genre</em></p>
+<img src="output/ethics/shap_summary.png" alt="Analyse SHAP" width="600px">
+<p><em>Figure 12: Analyse SHAP des contributions des caractéristiques, montrant l'impact de chaque variable sur la prédiction finale selon sa valeur.</em></p>
 </div>
 
-### 7.3 Explicabilité des prédictions
+#### Analyse des biais par caractéristiques démographiques
 
-La transparence du modèle est primordiale pour instaurer la confiance des utilisateurs et permettre la contestation des décisions:
+L'analyse des biais démographiques évalue comment le modèle performe à travers différents groupes de population. Les graphiques ci-dessous présentent trois métriques clés par groupe démographique:
 
-- **Interprétabilité globale**: Utilisation des valeurs SHAP pour identifier et visualiser les facteurs influençant le plus les prédictions.
-- **Explicabilité locale**: Pour chaque prédiction individuelle, le système peut générer une explication détaillée des facteurs ayant contribué à la décision.
+- **Taux de faux positifs**: Proportion de cas courts incorrectement classés comme longs
+- **Taux de faux négatifs**: Proportion de cas longs incorrectement classés comme courts
+- **Exactitude**: Proportion globale de prédictions correctes
 
-<div style="text-align: center;">
-<img src="output/ethics/shap_summary.png" alt="Importance des caractéristiques (SHAP values)" width="600px">
-<p><em>Figure 13: Importance relative des caractéristiques basée sur l'analyse SHAP</em></p>
+<div style="text-align: center; margin-bottom: 30px;">
+<img src="output/ethics/bias_analysis_sexe.png" alt="Analyse des biais par sexe" width="80%">
+<p><em>Figure 13a: Analyse des biais selon le sexe des assurés. Les barres montrent le taux de faux positifs, faux négatifs et l'exactitude pour chaque groupe.</em></p>
 </div>
 
-### 7.4 Gouvernance et processus de supervision
+<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+  <div>
+    <div style="text-align: center;">
+    <img src="output/ethics/bias_analysis_Age_Category.png" alt="Analyse des biais par catégorie d'âge" width="100%">
+    <p><em>Figure 13b: Analyse des biais selon la catégorie d'âge. Cette analyse permet d'identifier si certaines tranches d'âge sont désavantagées par le modèle.</em></p>
+    </div>
+  </div>
+  <div>
+    <div style="text-align: center;">
+    <img src="output/ethics/bias_analysis_FSA.png" alt="Analyse des biais par région (FSA)" width="100%">
+    <p><em>Figure 13c: Analyse des biais selon la région géographique (FSA). Cette analyse permet de vérifier l'équité géographique du modèle.</em></p>
+    </div>
+  </div>
+</div>
 
-Pour garantir une utilisation responsable à long terme:
+# 4. Déploiement
 
-- **Comité d'éthique interdisciplinaire**: Composé d'experts en science des données, de représentants du service des réclamations et de spécialistes en conformité.
-- **Surveillance continue**: Détection automatisée de la dérive des données et des changements de performance du modèle.
-- **Mécanismes de rétroaction**: Canal dédié pour signaler les préoccupations éthiques et processus de révision des décisions contestées.
+## 4.1 Aspects clés du déploiement
 
-### 7.5 Audit et documentation
+### Mise en production
 
-Le système maintient une documentation exhaustive de toutes les analyses et décisions:
+Le modèle a été déployé sous forme d'API REST permettant l'intégration avec les systèmes existants du service des réclamations. Les principales caractéristiques incluent:
 
-- **Journal d'audit**: Enregistrement de toutes les prédictions et des facteurs ayant influencé chaque décision.
-- **Rapports périodiques**: Génération automatique de rapports d'équité et de performance pour la revue par le comité d'éthique.
-- **Documentation technique**: Description détaillée des méthodes d'anonymisation, d'atténuation des biais et d'explicabilité.
+- Endpoint de prédiction pour les nouveaux cas
+- Interface pour l'explication des décisions
+- Logging des prédictions pour l'audit et la conformité
 
-Ces mesures de gouvernance éthique ne sont pas seulement des garanties de conformité légale, mais constituent également un avantage stratégique, permettant de développer un système d'IA responsable qui renforce la confiance des parties prenantes tout en optimisant l'attribution des cas d'invalidité.
+### Développement API
 
-## Conclusion
+- Documentation interactive via Swagger UI
+- Authentification sécurisée
+- Validation des données entrantes
 
-Le système de prédiction de durée d'invalidité développé dans ce projet répond parfaitement aux objectifs fixés. Avec une exactitude de 100% sur les données de test, il permet une attribution optimale des cas d'invalidité selon leur complexité anticipée.
+### Stratégie de déploiement
 
-L'architecture moderne mise en place offre:
+- Environnement conteneurisé via Docker
+- Déploiement progressif avec tests A/B
 
-- Une **séparation claire des responsabilités** entre les composants
-- Une **expérience utilisateur améliorée** grâce à l'interface React
-- Un **déploiement simplifié** grâce à la conteneurisation Docker
-- Une **gouvernance éthique robuste** garantissant l'équité et la transparence
+## 4.2 Intégration spécifique au projet
 
-Cette solution devrait contribuer significativement à l'amélioration de l'efficacité opérationnelle du service des réclamations, à la réduction des temps de traitement et à l'augmentation de la satisfaction des assurés.
+L'intégration du modèle dans le processus métier comprend:
 
-**Prochaines étapes**:
+- Connexion au système de gestion des réclamations
+- Interface utilisateur pour les gestionnaires
+- Tableau de bord de suivi des performances
+- Pipeline automatisé de réentraînement mensuel
 
-- Surveillance continue des performances en production
-- Enrichissement du modèle avec de nouvelles sources de données
-- Extension du système à d'autres types de réclamations
-- Développement de fonctionnalités d'apprentissage continu
-- Amélioration continue des mécanismes d'équité et d'explicabilité
+Le modèle est maintenant en production et contribue activement à l'optimisation de l'attribution des cas d'invalidité.
