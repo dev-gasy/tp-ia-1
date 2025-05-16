@@ -16,6 +16,7 @@ Le système est composé de plusieurs composants organisés dans une architectur
 - **Backend API**: FastAPI pour servir les prédictions du modèle
 - **Frontend**: Application React avec Vite pour une interface utilisateur interactive
 - **Infrastructure**: Docker et Docker Compose pour la conteneurisation et l'orchestration
+- **Gouvernance éthique**: Modules intégrés pour garantir l'équité, la transparence et la conformité
 
 ## Structure du Projet
 
@@ -42,12 +43,17 @@ Le système est composé de plusieurs composants organisés dans une architectur
 │   ├── model_training.py     # Entraînement des modèles
 │   ├── kpi_calculation.py    # Calcul des KPIs
 │   ├── model_deployment.py   # Version Flask originale
-│   └── utils.py              # Fonctions utilitaires
+│   ├── utils.py              # Fonctions utilitaires
+│   ├── ethics_governance.py  # Module de gouvernance éthique
+│   └── generate_ethics_visualizations.py # Visualisations éthiques
 ├── output/                   # Résultats et visualisations
+│   ├── ethics/               # Visualisations et analyses éthiques
+├── logs/                     # Journaux d'audit et de gouvernance
 ├── docker-compose.yml        # Configuration Docker Compose
 ├── setup.sh                  # Script d'installation
 ├── generate_demo_data.py     # Génération de données démo
-├── rapport.md                # Rapport d'analyse
+├── description.md            # Description méthodologique complète
+├── report.md                 # Rapport d'analyse
 └── README.md                 # Documentation
 ```
 
@@ -222,3 +228,28 @@ Développé pour le cours d'IA appliquée dans le cadre d'un projet académique.
 ## Licence
 
 Ce projet est distribué sous licence MIT.
+
+## Aspects Éthiques et de Gouvernance
+
+Le système intègre plusieurs mécanismes pour garantir une utilisation éthique et responsable:
+
+### Protection des Données
+
+- **Anonymisation**: Masquage automatique des informations identifiantes (FSA, années de naissance)
+- **Conformité LPRPDE**: Respect des lois canadiennes sur la protection des données personnelles
+
+### Équité et Transparence
+
+- **Détection de biais**: Analyse automatique des disparités de performance entre groupes démographiques
+- **Explicabilité**: Génération d'explications SHAP pour rendre les prédictions compréhensibles
+
+### Gouvernance
+
+- **Journal d'audit**: Enregistrement de toutes les prédictions et leurs justifications
+- **Surveillance continue**: Détection automatique de la dérive des données et des performances
+
+Pour plus de détails, consultez:
+
+- Le module `scripts/ethics_governance.py`
+- Le rapport d'éthique généré dans `output/ethics/ethics_report.md`
+- La section dédiée dans `report.md`

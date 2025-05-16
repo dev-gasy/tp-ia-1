@@ -25,6 +25,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from scripts import utils
 from scripts.data_processing import main as process_data
+from scripts.ethics_governance import EthicsGovernance
 
 
 def train_logistic_regression(
@@ -379,49 +380,99 @@ def compare_models(model_results: List[Dict[str, Union[str, float]]]) -> str:
 
 def main() -> BaseEstimator:
     """
-    Fonction principale pour exécuter le pipeline d'entraînement et d'évaluation du modèle
+    Fonction principale pour entraîner et évaluer les modèles.
     
     Returns:
-        Meilleur modèle entraîné
+        Le meilleur modèle sélectionné
     """
-    # Traiter les données (en appelant la fonction principale de data_processing.py)
+    print("Starting model training and evaluation...")
+    
+    # Traiter les données
     X_train, X_test, y_train, y_test, preprocessor, feature_names = process_data()
-
+    
     # Entraîner différents modèles
-    models: Dict[str, BaseEstimator] = {}
-
-    # Régression Logistique
-    models['logistic_regression'] = train_logistic_regression(X_train, y_train, preprocessor)
-
-    # Arbre de Décision
-    models['decision_tree'] = train_decision_tree(X_train, y_train, preprocessor)
-
-    # Forêt Aléatoire
-    models['random_forest'] = train_random_forest(X_train, y_train, preprocessor)
-
-    # Réseau de Neurones
-    models['neural_network'] = train_neural_network(X_train, y_train, preprocessor)
-
-    # Évaluer tous les modèles
+    models = []
+    
+    # 1. Régression Logistique
+    logistic_model = train_logistic_regression(X_train, y_train, preprocessor)
+    models.append(("Régression Logistique", logistic_model))
+    
+    # 2. Arbre de Décision
+    decision_tree_model = train_decision_tree(X_train, y_train, preprocessor)
+    models.append(("Arbre de Décision", decision_tree_model))
+    
+    # 3. Random Forest
+    random_forest_model = train_random_forest(X_train, y_train, preprocessor)
+    models.append(("Random Forest", random_forest_model))
+    
+    # 4. Réseau de Neurones
+    neural_network_model = train_neural_network(X_train, y_train, preprocessor)
+    models.append(("Réseau de Neurones", neural_network_model))
+    
+    # Évaluer et comparer les modèles
     model_results = []
-    for model_name, model in models.items():
-        # Convertir le nom du modèle au format d'affichage
-        display_name = model_name.replace('_', ' ').title()
-        model_result = evaluate_model(model, X_test, y_test, display_name)
-        model_results.append(model_result)
-
-    # Comparer les modèles
+    
+    for name, model in models:
+        result = evaluate_model(model, X_test, y_test, name)
+        model_results.append(result)
+    
+    # Comparer les modèles et sélectionner le meilleur
     best_model_name = compare_models(model_results)
-
-    # Sauvegarder le meilleur modèle
-    best_model_key = best_model_name.lower().replace(' ', '_')
-    best_model = models[best_model_key]
-
-    # Utiliser la fonction utils pour sauvegarder le modèle
-    utils.save_model(best_model, 'models/best_model.pkl')
-
-    print(f"\nBest model ({best_model_name}) saved as 'models/best_model.pkl'")
-
+    
+    # Trouver le meilleur modèle parmi ceux entraînés
+    best_model = None
+    for name, model in models:
+        if name == best_model_name:
+            best_model = model
+            break
+    
+    if best_model is None:
+        raise ValueError(f"Le modèle {best_model_name} n'a pas été trouvé parmi les modèles entraînés.")
+    
+    # Implémenter les considérations éthiques et de gouvernance
+    print("\nExécution des analyses éthiques et de gouvernance...")
+    
+    # Initialiser le module d'éthique et de gouvernance
+    ethics = EthicsGovernance(
+        model=best_model,
+        preprocessor=preprocessor,
+        feature_names=feature_names,
+        protected_attributes=['Sexe', 'Age_Category', 'FSA']
+    )
+    
+    # Vérifier si les colonnes protégées existent dans les données de test
+    X_test_df = pd.DataFrame(X_test, columns=feature_names)
+    
+    # Générer des prédictions pour les analyses d'éthique
+    best_model_pipeline = best_model if isinstance(best_model, Pipeline) else Pipeline([('preprocessor', preprocessor), ('classifier', best_model)])
+    y_pred = best_model_pipeline.predict(X_test)
+    
+    try:
+        # Analyser les biais potentiels (si les attributs protégés sont présents)
+        protected_cols = [col for col in ethics.protected_attributes if col in X_test_df.columns]
+        if protected_cols:
+            print(f"Analyse de biais sur les attributs protégés disponibles: {protected_cols}")
+            bias_stats = ethics.detect_bias(X_test_df, y_test, y_pred)
+            print("Analyse de biais terminée. Visualisations enregistrées dans output/ethics/")
+        else:
+            print("Aucun attribut protégé disponible dans les données pour l'analyse de biais")
+        
+        # Générer des explications pour les prédictions 
+        try:
+            shap_values = ethics.explain_predictions(X_test_df)
+            print("Explications SHAP générées. Visualisations enregistrées dans output/ethics/")
+        except Exception as e:
+            print(f"Erreur lors de la génération des explications SHAP: {str(e)}")
+        
+        # Générer un rapport d'éthique complet
+        report_path = ethics.generate_ethics_report()
+        print(f"Rapport d'éthique généré: {report_path}")
+        
+    except Exception as e:
+        print(f"Erreur lors de l'analyse éthique: {str(e)}")
+    
+    print("\nModel training and evaluation completed!")
+    
     return best_model
 
 

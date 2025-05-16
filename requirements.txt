@@ -7,3 +7,4 @@ nltk==3.8.1
 flask==2.3.3
 requests==2.31.0
 joblib==1.2.0
+shap==0.41.0

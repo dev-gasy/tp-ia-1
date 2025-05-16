@@ -347,6 +347,64 @@ npm install
 npm run dev
 ```
 
+## 7. Considérations éthiques et de gouvernance
+
+Le développement de systèmes d'intelligence artificielle pour la prise de décision dans le secteur de l'assurance nécessite une attention particulière aux enjeux éthiques et réglementaires. Notre projet intègre plusieurs mesures pour garantir une utilisation responsable et conforme.
+
+### 7.1 Protection des données personnelles
+
+Notre système traite des données sensibles relatives à la santé des assurés. Pour assurer leur protection:
+
+- **Anonymisation des données**: Le système masque automatiquement les informations identifiantes comme les FSA (en conservant uniquement la première lettre) et regroupe les années de naissance par décennie.
+- **Conformité réglementaire**: L'implémentation respecte la Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE) et les réglementations provinciales spécifiques.
+
+<div style="text-align: center;">
+<img src="output/ethics/anonymization_example.png" alt="Exemple d'anonymisation des données" width="600px">
+<p><em>Figure 11: Illustration du processus d'anonymisation des données sensibles</em></p>
+</div>
+
+### 7.2 Détection et atténuation des biais
+
+Pour garantir l'équité du modèle, plusieurs analyses et mesures sont mises en place:
+
+- **Analyse de biais par attributs protégés**: Détection systématique des disparités de performance entre différents groupes démographiques (selon le sexe, l'âge et la localisation géographique).
+- **Techniques d'atténuation**: Équilibrage des classes, validation croisée stratifiée et pondération des exemples sous-représentés.
+
+<div style="text-align: center;">
+<img src="output/ethics/bias_analysis_sexe.png" alt="Analyse de biais par genre" width="600px">
+<p><em>Figure 12: Analyse comparative des métriques de performance par genre</em></p>
+</div>
+
+### 7.3 Explicabilité des prédictions
+
+La transparence du modèle est primordiale pour instaurer la confiance des utilisateurs et permettre la contestation des décisions:
+
+- **Interprétabilité globale**: Utilisation des valeurs SHAP pour identifier et visualiser les facteurs influençant le plus les prédictions.
+- **Explicabilité locale**: Pour chaque prédiction individuelle, le système peut générer une explication détaillée des facteurs ayant contribué à la décision.
+
+<div style="text-align: center;">
+<img src="output/ethics/shap_summary.png" alt="Importance des caractéristiques (SHAP values)" width="600px">
+<p><em>Figure 13: Importance relative des caractéristiques basée sur l'analyse SHAP</em></p>
+</div>
+
+### 7.4 Gouvernance et processus de supervision
+
+Pour garantir une utilisation responsable à long terme:
+
+- **Comité d'éthique interdisciplinaire**: Composé d'experts en science des données, de représentants du service des réclamations et de spécialistes en conformité.
+- **Surveillance continue**: Détection automatisée de la dérive des données et des changements de performance du modèle.
+- **Mécanismes de rétroaction**: Canal dédié pour signaler les préoccupations éthiques et processus de révision des décisions contestées.
+
+### 7.5 Audit et documentation
+
+Le système maintient une documentation exhaustive de toutes les analyses et décisions:
+
+- **Journal d'audit**: Enregistrement de toutes les prédictions et des facteurs ayant influencé chaque décision.
+- **Rapports périodiques**: Génération automatique de rapports d'équité et de performance pour la revue par le comité d'éthique.
+- **Documentation technique**: Description détaillée des méthodes d'anonymisation, d'atténuation des biais et d'explicabilité.
+
+Ces mesures de gouvernance éthique ne sont pas seulement des garanties de conformité légale, mais constituent également un avantage stratégique, permettant de développer un système d'IA responsable qui renforce la confiance des parties prenantes tout en optimisant l'attribution des cas d'invalidité.
+
 ## Conclusion
 
 Le système de prédiction de durée d'invalidité développé dans ce projet répond parfaitement aux objectifs fixés. Avec une exactitude de 100% sur les données de test, il permet une attribution optimale des cas d'invalidité selon leur complexité anticipée.
@@ -356,6 +414,7 @@ L'architecture moderne mise en place offre:
 - Une **séparation claire des responsabilités** entre les composants
 - Une **expérience utilisateur améliorée** grâce à l'interface React
 - Un **déploiement simplifié** grâce à la conteneurisation Docker
+- Une **gouvernance éthique robuste** garantissant l'équité et la transparence
 
 Cette solution devrait contribuer significativement à l'amélioration de l'efficacité opérationnelle du service des réclamations, à la réduction des temps de traitement et à l'augmentation de la satisfaction des assurés.
 
@@ -365,3 +424,4 @@ Cette solution devrait contribuer significativement à l'amélioration de l'effi
 - Enrichissement du modèle avec de nouvelles sources de données
 - Extension du système à d'autres types de réclamations
 - Développement de fonctionnalités d'apprentissage continu
+- Amélioration continue des mécanismes d'équité et d'explicabilité
