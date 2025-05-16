@@ -100,6 +100,62 @@ Fichier : `StatCanadaPopulationData.csv`
   - Nombre moyen d'enfants par famille
 - Clé de liaison : FSA (RTA)
 
+## 1.5 Besoins de gouvernances (considérations légales ou éthiques)
+
+L'utilisation de l'intelligence artificielle pour la prise de décisions dans le domaine de l'assurance soulève d'importantes considérations légales et éthiques qui doivent être prises en compte tout au long du projet. Ces considérations sont fondamentales pour garantir la conformité réglementaire et maintenir la confiance des assurés.
+
+### 1.5.1 Protection des données personnelles
+
+Notre projet traite des données sensibles relatives à la santé des assurés, ce qui implique :
+
+- Conformité avec la **Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE)** au niveau fédéral
+- Respect des lois provinciales sur la protection des données (comme la Loi sur la protection des renseignements personnels dans le secteur privé au Québec)
+- Mise en place de mesures de sécurité adéquates pour protéger les données médicales confidentielles
+- Anonymisation des données d'entraînement pour éviter l'identification des individus
+
+### 1.5.2 Biais et discrimination algorithmique
+
+Les modèles d'IA peuvent involontairement perpétuer ou amplifier des biais existants, notamment :
+
+- Biais de genre ou d'âge dans la prédiction de la durée d'invalidité
+- Discrimination géographique basée sur le FSA (code postal)
+- Biais liés au niveau de revenu (variable Salaire_Annuel)
+
+Pour atténuer ces risques, nous prévoyons :
+
+- Analyse des données d'entraînement pour détecter les biais potentiels
+- Tests réguliers du modèle pour identifier les disparités de performance entre différents groupes démographiques
+- Techniques d'équité algorithmique pour équilibrer les prédictions
+
+### 1.5.3 Transparence et explicabilité
+
+Dans le secteur de l'assurance, les décisions doivent être justifiables et explicables :
+
+- Privilégier des modèles interprétables lorsque possible (comme la régression logistique ou les arbres de décision)
+- Développer des méthodes d'explication locales pour les modèles complexes (comme SHAP ou LIME)
+- Documenter clairement la logique de prise de décision pour justifier l'attribution des cas
+- Permettre la contestation humaine des décisions algorithmiques
+
+### 1.5.4 Conformité réglementaire spécifique à l'assurance
+
+Le secteur de l'assurance est fortement réglementé :
+
+- Respect des lignes directrices du Bureau du surintendant des institutions financières (BSIF)
+- Conformité avec les lois provinciales sur les assurances
+- Documentation adéquate des modèles pour les audits réglementaires
+- Mise en place d'un processus de révision humaine pour les cas limites ou contestés
+
+### 1.5.5 Gouvernance des modèles
+
+Pour assurer une utilisation éthique et responsable de notre solution, nous établirons :
+
+- Un comité d'éthique interdisciplinaire pour superviser le développement et l'utilisation du modèle
+- Des protocoles de validation régulière et de surveillance continue
+- Un processus documenté de développement et de déploiement conforme aux normes internes
+- Des mécanismes de rétroaction permettant aux employés et aux assurés de signaler des problèmes potentiels
+
+L'intégration de ces considérations éthiques et légales dès la phase de conception garantira non seulement la conformité du projet, mais contribuera également à développer une solution d'IA responsable qui renforce la confiance des parties prenantes.
+
 # 2. Acquisition et Compréhension des données
 
 Cette deuxième phase du cycle de vie d'un projet en intelligence artificielle vise à acquérir les données identifiées lors de l'étape précédente et à les explorer en profondeur pour en comprendre la structure, le contenu, la qualité et les relations potentielles entre les variables.

@@ -84,7 +84,7 @@ L'examen des corrélations entre variables catégorielles révèle les relations
 La matrice complète présente une vue globale des interactions entre toutes les variables du modèle:
 
 <div style="text-align: center;">
-<img src="output/correlation_matrix_all.png" alt="Matrice de corrélation - Toutes Variables" width="600px">
+<img src="output/correlation_matrix.png" alt="Matrice de corrélation - Toutes Variables" width="600px">
 <p><em>Figure 2.3: Matrice de corrélation entre toutes les variables</em></p>
 </div>
 
@@ -263,7 +263,7 @@ Chaque modèle a ses propres caractéristiques de performance ROC:
   </div>
 </div>
 
-<p style="text-align: center;"><em>Figure 9: Courbes ROC pour chaque modèle</em></p>
+<p style="text-align: center;"><em>Figure 8: Courbes ROC pour chaque modèle</em></p>
 
 ## 5. Impact sur les opérations
 
@@ -271,7 +271,7 @@ L'implémentation de ce modèle devrait avoir un impact significatif sur les op�
 
 <div style="text-align: center;">
 <img src="output/kpi_business_impact.png" alt="Impact sur les opérations" width="600px">
-<p><em>Figure 10: Impact opérationnel du modèle</em></p>
+<p><em>Figure 9: Impact opérationnel du modèle</em></p>
 </div>
 
 - **Taux d'attribution correct**: 100% (dépassant largement l'objectif initial de 60% et l'objectif amélioré de 80%)
@@ -284,7 +284,7 @@ La distribution équilibrée des classes dans notre jeu de données de test assu
 
 <div style="text-align: center;">
 <img src="output/kpi_class_distribution.png" alt="Distribution des classes prédites" width="600px">
-<p><em>Figure 11: Distribution des classes prédites vs. réelles</em></p>
+<p><em>Figure 10: Distribution des classes prédites vs. réelles</em></p>
 </div>
 
 ## 6. Déploiement

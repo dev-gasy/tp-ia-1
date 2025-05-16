@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Model Training Script for Insurance Claim Duration Prediction
-This script implements and evaluates multiple classification models
-to predict claim duration class (short vs long).
+Script d'Entraînement de Modèle pour la Prédiction de Durée des Réclamations d'Assurance
+Ce script implémente et évalue plusieurs modèles de classification
+pour prédire la classe de durée des réclamations (courte vs longue).
 """
 
 import os
@@ -33,32 +33,32 @@ def train_logistic_regression(
         preprocessor: Any
 ) -> BaseEstimator:
     """
-    Train a logistic regression model with hyperparameter tuning
+    Entraîner un modèle de régression logistique avec optimisation des hyperparamètres
     
     Args:
-        X_train: Training features
-        y_train: Training labels
-        preprocessor: Data preprocessor
+        X_train: Caractéristiques d'entraînement
+        y_train: Étiquettes d'entraînement
+        preprocessor: Préprocesseur de données
         
     Returns:
-        Trained model
+        Modèle entraîné
     """
     print("\nTraining Logistic Regression model...")
 
-    # Create a pipeline with preprocessing and model
+    # Créer un pipeline avec prétraitement et modèle
     pipeline = Pipeline([
         ('preprocessor', preprocessor),
         ('classifier', LogisticRegression(random_state=42))
     ])
 
-    # Define parameter grid for grid search
+    # Définir la grille de paramètres pour la recherche en grille
     param_grid = {
         'classifier__C': [0.01, 0.1, 1.0, 10.0],
         'classifier__solver': ['liblinear', 'saga'],
         'classifier__penalty': ['l1', 'l2']
     }
 
-    # Perform grid search
+    # Effectuer la recherche en grille
     grid_search = GridSearchCV(
         pipeline,
         param_grid=param_grid,
@@ -67,12 +67,12 @@ def train_logistic_regression(
         n_jobs=-1
     )
 
-    # Train the model
+    # Entraîner le modèle
     start_time = time.time()
     grid_search.fit(X_train, y_train)
     training_time = time.time() - start_time
 
-    # Print results
+    # Afficher les résultats
     print(f"Best parameters: {grid_search.best_params_}")
     print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
     print(f"Training time: {training_time:.2f} seconds")
@@ -86,25 +86,25 @@ def train_decision_tree(
         preprocessor: Any
 ) -> BaseEstimator:
     """
-    Train a decision tree model with hyperparameter tuning
+    Entraîner un modèle d'arbre de décision avec optimisation des hyperparamètres
     
     Args:
-        X_train: Training features
-        y_train: Training labels
-        preprocessor: Data preprocessor
+        X_train: Caractéristiques d'entraînement
+        y_train: Étiquettes d'entraînement
+        preprocessor: Préprocesseur de données
         
     Returns:
-        Trained model
+        Modèle entraîné
     """
     print("\nTraining Decision Tree model...")
 
-    # Create a pipeline with preprocessing and model
+    # Créer un pipeline avec prétraitement et modèle
     pipeline = Pipeline([
         ('preprocessor', preprocessor),
         ('classifier', DecisionTreeClassifier(random_state=42))
     ])
 
-    # Define parameter grid for grid search
+    # Définir la grille de paramètres pour la recherche en grille
     param_grid = {
         'classifier__max_depth': [None, 5, 10, 15, 20],
         'classifier__min_samples_split': [2, 5, 10],
@@ -112,7 +112,7 @@ def train_decision_tree(
         'classifier__criterion': ['gini', 'entropy']
     }
 
-    # Perform grid search
+    # Effectuer la recherche en grille
     grid_search = GridSearchCV(
         pipeline,
         param_grid=param_grid,
@@ -121,12 +121,12 @@ def train_decision_tree(
         n_jobs=-1
     )
 
-    # Train the model
+    # Entraîner le modèle
     start_time = time.time()
     grid_search.fit(X_train, y_train)
     training_time = time.time() - start_time
 
-    # Print results
+    # Afficher les résultats
     print(f"Best parameters: {grid_search.best_params_}")
     print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
     print(f"Training time: {training_time:.2f} seconds")
@@ -140,25 +140,25 @@ def train_random_forest(
         preprocessor: Any
 ) -> BaseEstimator:
     """
-    Train a random forest model with hyperparameter tuning
+    Entraîner un modèle de forêt aléatoire avec optimisation des hyperparamètres
     
     Args:
-        X_train: Training features
-        y_train: Training labels
-        preprocessor: Data preprocessor
+        X_train: Caractéristiques d'entraînement
+        y_train: Étiquettes d'entraînement
+        preprocessor: Préprocesseur de données
         
     Returns:
-        Trained model
+        Modèle entraîné
     """
     print("\nTraining Random Forest model...")
 
-    # Create a pipeline with preprocessing and model
+    # Créer un pipeline avec prétraitement et modèle
     pipeline = Pipeline([
         ('preprocessor', preprocessor),
         ('classifier', RandomForestClassifier(random_state=42))
     ])
 
-    # Define parameter grid for grid search
+    # Définir la grille de paramètres pour la recherche en grille
     param_grid = {
         'classifier__n_estimators': [50, 100, 200],
         'classifier__max_depth': [None, 10, 20, 30],
@@ -166,7 +166,7 @@ def train_random_forest(
         'classifier__min_samples_leaf': [1, 2, 4]
     }
 
-    # Perform grid search
+    # Effectuer la recherche en grille
     grid_search = GridSearchCV(
         pipeline,
         param_grid=param_grid,
@@ -175,12 +175,12 @@ def train_random_forest(
         n_jobs=-1
     )
 
-    # Train the model
+    # Entraîner le modèle
     start_time = time.time()
     grid_search.fit(X_train, y_train)
     training_time = time.time() - start_time
 
-    # Print results
+    # Afficher les résultats
     print(f"Best parameters: {grid_search.best_params_}")
     print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
     print(f"Training time: {training_time:.2f} seconds")
@@ -194,25 +194,25 @@ def train_neural_network(
         preprocessor: Any
 ) -> BaseEstimator:
     """
-    Train a neural network model with hyperparameter tuning
+    Entraîner un modèle de réseau de neurones avec optimisation des hyperparamètres
     
     Args:
-        X_train: Training features
-        y_train: Training labels
-        preprocessor: Data preprocessor
+        X_train: Caractéristiques d'entraînement
+        y_train: Étiquettes d'entraînement
+        preprocessor: Préprocesseur de données
         
     Returns:
-        Trained model
+        Modèle entraîné
     """
     print("\nTraining Neural Network model...")
 
-    # Create a pipeline with preprocessing and model
+    # Créer un pipeline avec prétraitement et modèle
     pipeline = Pipeline([
         ('preprocessor', preprocessor),
         ('classifier', MLPClassifier(random_state=42, max_iter=1000))
     ])
 
-    # Define parameter grid for grid search
+    # Définir la grille de paramètres pour la recherche en grille
     param_grid = {
         'classifier__hidden_layer_sizes': [(50,), (100,), (50, 50), (100, 50)],
         'classifier__activation': ['relu', 'tanh'],
@@ -220,7 +220,7 @@ def train_neural_network(
         'classifier__learning_rate': ['constant', 'adaptive']
     }
 
-    # Perform grid search
+    # Effectuer la recherche en grille
     grid_search = GridSearchCV(
         pipeline,
         param_grid=param_grid,
@@ -229,12 +229,12 @@ def train_neural_network(
         n_jobs=-1
     )
 
-    # Train the model
+    # Entraîner le modèle
     start_time = time.time()
     grid_search.fit(X_train, y_train)
     training_time = time.time() - start_time
 
-    # Print results
+    # Afficher les résultats
     print(f"Best parameters: {grid_search.best_params_}")
     print(f"Best cross-validation score: {grid_search.best_score_:.4f}")
     print(f"Training time: {training_time:.2f} seconds")
@@ -249,38 +249,38 @@ def evaluate_model(
         model_name: str
 ) -> Dict[str, Union[str, float]]:
     """
-    Evaluate model performance on test set
+    Évaluer la performance du modèle sur l'ensemble de test
     
     Args:
-        model: Trained model
-        X_test: Test features
-        y_test: Test labels
-        model_name: Name of the model
+        model: Modèle entraîné
+        X_test: Caractéristiques de test
+        y_test: Étiquettes de test
+        model_name: Nom du modèle
         
     Returns:
-        Dictionary with model performance metrics
+        Dictionnaire avec les métriques de performance du modèle
     """
     print(f"\nEvaluating {model_name} model...")
 
-    # Ensure output directory exists
+    # S'assurer que le répertoire de sortie existe
     os.makedirs('output', exist_ok=True)
 
-    # Make predictions
+    # Faire des prédictions
     y_pred = model.predict(X_test)
 
-    # Calculate metrics using utils function
+    # Calculer les métriques en utilisant la fonction utils
     metrics = utils.calculate_classification_metrics(y_test, y_pred)
 
-    # Print metrics
+    # Afficher les métriques
     print(f"Accuracy: {metrics['accuracy']:.4f}")
     print(f"Precision: {metrics['precision']:.4f}")
     print(f"Recall: {metrics['recall']:.4f}")
     print(f"F1 Score: {metrics['f1']:.4f}")
 
-    # Create safe filename from model name
+    # Créer un nom de fichier sécurisé à partir du nom du modèle
     safe_name = model_name.replace(" ", "_").lower()
 
-    # Generate confusion matrix using utils function
+    # Générer la matrice de confusion en utilisant la fonction utils
     classes = ['Court (<= 180 jours)', 'Long (> 180 jours)']
     utils.plot_confusion_matrix(
         y_test,
@@ -289,30 +289,30 @@ def evaluate_model(
         model_name=model_name
     )
 
-    # Print classification report
+    # Afficher le rapport de classification
     from sklearn.metrics import classification_report
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred,
                                 target_names=['Court (<= 180 jours)', 'Long (> 180 jours)']))
 
-    # ROC curve
+    # Courbe ROC
     try:
         y_pred_proba = model.predict_proba(X_test)[:, 1]
 
-        # Create ROC curve using utils function
+        # Créer la courbe ROC en utilisant la fonction utils
         utils.plot_roc_curve(
             y_test,
             y_pred_proba,
             model_name=model_name
         )
-        # Calculate ROC AUC
+        # Calculer l'AUC ROC
         fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
         roc_auc = auc(fpr, tpr)
     except:
         print("Could not generate ROC curve (model may not support predict_proba)")
         roc_auc = None
 
-    # Create result dictionary
+    # Créer le dictionnaire de résultats
     result = {
         'model_name': model_name,
         'accuracy': metrics['accuracy'],
@@ -329,39 +329,39 @@ def evaluate_model(
 
 def compare_models(model_results: List[Dict[str, Union[str, float]]]) -> str:
     """
-    Compare the performance of all models
+    Comparer la performance de tous les modèles
     
     Args:
-        model_results: List of dictionaries with model results
+        model_results: Liste de dictionnaires avec les résultats des modèles
         
     Returns:
-        Name of the best model
+        Nom du meilleur modèle
     """
     print("\nComparing model performance:")
 
-    # Create comparison dataframe
+    # Créer un DataFrame de comparaison
     results_df = pd.DataFrame(model_results)
     print(results_df)
 
-    # Ensure output directory exists
+    # S'assurer que le répertoire de sortie existe
     os.makedirs('output', exist_ok=True)
 
-    # Plot comparison
+    # Tracer la comparaison
     plt.figure(figsize=(12, 8))
     metrics = ['accuracy', 'precision', 'recall', 'f1']
 
-    # Set width of bars
+    # Définir la largeur des barres
     barWidth = 0.2
 
-    # Set position of bars on X axis
+    # Définir la position des barres sur l'axe X
     r = np.arange(len(results_df))
 
-    # Make the plot
+    # Créer le graphique
     for i, metric in enumerate(metrics):
         plt.bar(r + i * barWidth, results_df[metric], width=barWidth,
                 edgecolor='grey', label=metric)
 
-    # Add labels and title
+    # Ajouter les étiquettes et le titre
     plt.xlabel('Models', fontweight='bold')
     plt.ylabel('Scores', fontweight='bold')
     plt.xticks(r + 0.3, results_df['model_name'])
@@ -369,7 +369,7 @@ def compare_models(model_results: List[Dict[str, Union[str, float]]]) -> str:
     plt.legend()
     plt.savefig('output/model_comparison.png')
 
-    # Find the best model based on F1 score
+    # Trouver le meilleur modèle basé sur le score F1
     best_model_idx = results_df['f1'].idxmax()
     best_model_name = results_df.loc[best_model_idx, 'model_name']
     print(f"\nBest model based on F1 score: {best_model_name}")
@@ -379,45 +379,45 @@ def compare_models(model_results: List[Dict[str, Union[str, float]]]) -> str:
 
 def main() -> BaseEstimator:
     """
-    Main function to execute the model training and evaluation pipeline
+    Fonction principale pour exécuter le pipeline d'entraînement et d'évaluation du modèle
     
     Returns:
-        Trained best model
+        Meilleur modèle entraîné
     """
-    # Process data (calling the main function from data_processing.py)
+    # Traiter les données (en appelant la fonction principale de data_processing.py)
     X_train, X_test, y_train, y_test, preprocessor, feature_names = process_data()
 
-    # Train different models
+    # Entraîner différents modèles
     models: Dict[str, BaseEstimator] = {}
 
-    # Logistic Regression
+    # Régression Logistique
     models['logistic_regression'] = train_logistic_regression(X_train, y_train, preprocessor)
 
-    # Decision Tree
+    # Arbre de Décision
     models['decision_tree'] = train_decision_tree(X_train, y_train, preprocessor)
 
-    # Random Forest
+    # Forêt Aléatoire
     models['random_forest'] = train_random_forest(X_train, y_train, preprocessor)
 
-    # Neural Network
+    # Réseau de Neurones
     models['neural_network'] = train_neural_network(X_train, y_train, preprocessor)
 
-    # Evaluate all models
+    # Évaluer tous les modèles
     model_results = []
     for model_name, model in models.items():
-        # Convert model_name to display format
+        # Convertir le nom du modèle au format d'affichage
         display_name = model_name.replace('_', ' ').title()
         model_result = evaluate_model(model, X_test, y_test, display_name)
         model_results.append(model_result)
 
-    # Compare models
+    # Comparer les modèles
     best_model_name = compare_models(model_results)
 
-    # Save the best model
+    # Sauvegarder le meilleur modèle
     best_model_key = best_model_name.lower().replace(' ', '_')
     best_model = models[best_model_key]
 
-    # Use utils function to save model
+    # Utiliser la fonction utils pour sauvegarder le modèle
     utils.save_model(best_model, 'models/best_model.pkl')
 
     print(f"\nBest model ({best_model_name}) saved as 'models/best_model.pkl'")

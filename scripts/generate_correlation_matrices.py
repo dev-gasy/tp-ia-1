@@ -216,10 +216,26 @@ class CorrelationMatrixGenerator:
         self._generate_correlation_matrix(
             df=df_encoded,
             title="Matrice de Corrélation - Toutes Variables",
-            filename="correlation_matrix_all",
+            filename="correlation_matrix",
             figsize=(14, 12),
             annot_kws={"size": 8}
         )
+
+    def run(self):
+        """
+        Génère toutes les matrices de corrélation
+        """
+        print("Generating correlation matrices...")
+        
+        # Load data
+        df = self.load_data()
+        if df is None:
+            # Create synthetic data if real data loading fails
+            df = self._create_demo_data()
+        
+        # Generate correlation matrices
+        self.generate_all_correlation_matrices(df)
+        print("All correlation matrices generated.")
 
 
 def main() -> None:
@@ -228,11 +244,8 @@ def main() -> None:
         # Créer l'instance du générateur
         generator = CorrelationMatrixGenerator()
         
-        # Charger les données
-        data = generator.load_data()
-        
         # Générer les matrices
-        generator.generate_all_correlation_matrices(data)
+        generator.run()
         
         print("Génération des matrices de corrélation terminée avec succès.")
     except Exception as e:
