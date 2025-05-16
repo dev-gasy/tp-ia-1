@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
 from sklearn.metrics import confusion_matrix
+from sklearn.pipeline import Pipeline
 
 # Configuration du logging
 logging.basicConfig(
@@ -206,43 +207,83 @@ class EthicsGovernance:
         if self.model is None:
             logger.error("Aucun modèle n'a été fourni pour l'explication")
             return None
-
-        # Prétraiter les données si nécessaire
-        if X_processed is None and self.preprocessor is not None:
-            X_processed = self.preprocessor.transform(X)
-        else:
-            X_processed = X
+            
+        os.makedirs(output_dir, exist_ok=True)
 
         # Échantillonner pour l'explication
-        if len(X) > sample_size:
+        if isinstance(X, pd.DataFrame) and len(X) > sample_size:
             indices = np.random.choice(len(X), sample_size, replace=False)
-            X_sample = X.iloc[indices] if hasattr(X, 'iloc') else X[indices]
-            X_processed_sample = X_processed[indices] if hasattr(X_processed, 'shape') else X_processed.iloc[indices]
+            X_sample = X.iloc[indices]
         else:
             X_sample = X
-            X_processed_sample = X_processed
-
-        try:
-            # Créer l'explicateur SHAP adapté au type de modèle
-            explainer = shap.Explainer(self.model)
-            shap_values = explainer(X_processed_sample)
             
-            # Visualisation des valeurs SHAP
+        # Tentative d'explication avec différentes approches
+        try:
+            logger.info("Tentative d'explication avec l'explainer SHAP")
+            
+            # Approche 1: Si un préprocesseur est disponible, tenter de l'utiliser
+            if self.preprocessor is not None:
+                try:
+                    logger.info("Prétraitement des données avec le préprocesseur")
+                    # Vérifier si le préprocesseur est déjà ajusté
+                    if hasattr(self.preprocessor, 'transform'):
+                        X_processed = self.preprocessor.transform(X_sample)
+                        
+                        # Créer l'explainer SHAP
+                        logger.info("Création de l'explainer SHAP")
+                        if hasattr(self.model, 'predict_proba'):
+                            explainer = shap.Explainer(self.model.predict_proba)
+                        else:
+                            explainer = shap.Explainer(self.model)
+                            
+                        # Obtenir les valeurs SHAP
+                        shap_values = explainer(X_processed)
+                except Exception as e:
+                    logger.warning(f"Échec du prétraitement: {str(e)}")
+                    X_processed = None
+            
+            # Approche 2: Si le prétraitement échoue ou n'est pas disponible, utiliser directement le modèle
+            if X_processed is None:
+                logger.info("Explication directe sans prétraitement")
+                if isinstance(self.model, Pipeline):
+                    # Tenter d'utiliser un explainer sur le pipeline complet
+                    explainer = shap.Explainer(self.model)
+                    shap_values = explainer(X_sample)
+                else:
+                    # Créer un KernelExplainer qui n'a pas besoin de prétraitement
+                    background = shap.maskers.Independent(X_sample, max_samples=100)
+                    
+                    if hasattr(self.model, 'predict_proba'):
+                        explainer = shap.KernelExplainer(self.model.predict_proba, background)
+                        shap_values = explainer.shap_values(X_sample)
+                    else:
+                        explainer = shap.KernelExplainer(self.model.predict, background)
+                        shap_values = explainer.shap_values(X_sample)
+            
+            # Visualisation simplifiée des valeurs SHAP
             plt.figure(figsize=(12, 8))
-            shap.summary_plot(shap_values, X_processed_sample, 
-                             feature_names=self.feature_names,
-                             show=False)
+            
+            # Utiliser une visualisation compatible avec différents formats de valeurs SHAP
+            if isinstance(shap_values, list):
+                # Pour les formats de sortie plus anciens (liste de matrices)
+                shap.summary_plot(
+                    shap_values[1] if len(shap_values) > 1 else shap_values[0], 
+                    X_sample,
+                    feature_names=self.feature_names if self.feature_names else X_sample.columns,
+                    show=False
+                )
+            else:
+                # Pour les nouveaux formats SHAP
+                shap.summary_plot(
+                    shap_values, 
+                    X_sample,
+                    feature_names=self.feature_names if self.feature_names else X_sample.columns,
+                    show=False
+                )
+                
             plt.title("Importance des caractéristiques (Valeurs SHAP)")
             plt.tight_layout()
             plt.savefig(f"{output_dir}/shap_summary.png", dpi=300)
-            plt.close()
-            
-            # Visualisation détaillée pour un exemple
-            plt.figure(figsize=(12, 6))
-            shap.plots.waterfall(shap_values[0], show=False)
-            plt.title("Explication détaillée d'une prédiction (Waterfall Plot)")
-            plt.tight_layout()
-            plt.savefig(f"{output_dir}/shap_waterfall.png", dpi=300)
             plt.close()
             
             logger.info(f"Explications SHAP générées pour {sample_size} instances")
@@ -250,6 +291,26 @@ class EthicsGovernance:
             
         except Exception as e:
             logger.error(f"Erreur lors de la génération des explications SHAP: {str(e)}")
+            
+            # Créer une visualisation de secours
+            plt.figure(figsize=(12, 8))
+            if hasattr(self.model, 'feature_importances_'):
+                importances = self.model.feature_importances_
+                indices = np.argsort(importances)[::-1]
+                
+                feature_names = self.feature_names if self.feature_names else [f"Feature {i}" for i in range(len(importances))]
+                plt.barh(range(len(indices)), importances[indices])
+                plt.yticks(range(len(indices)), [feature_names[i] for i in indices])
+                plt.title("Importance des caractéristiques (feature_importances_)")
+            else:
+                plt.text(0.5, 0.5, "SHAP indisponible\nVoir log pour détails", 
+                        horizontalalignment='center', verticalalignment='center',
+                        fontsize=14)
+            
+            plt.tight_layout()
+            plt.savefig(f"{output_dir}/feature_importance_fallback.png", dpi=300)
+            plt.close()
+            
             return None
     
     def monitor_data_drift(self, X_train, X_new):
@@ -415,7 +476,7 @@ Cette évaluation démontre notre engagement à développer un système d'IA ét
         return output_file
 
 
-def main():
+def main(model=None, preprocessor=None, feature_names=None):
     """Fonction principale pour démontrer les fonctionnalités du module."""
     
     try:
@@ -437,8 +498,13 @@ def main():
         y_true = (X['Age'] > 40).astype(int)
         y_pred = ((X['Age'] > 40) & (np.random.random(n_samples) > 0.2)).astype(int)
         
-        # Initialiser le module d'éthique
-        ethics = EthicsGovernance(protected_attributes=['Sexe', 'Age_Category', 'FSA'])
+        # Initialiser le module d'éthique avec le modèle et le préprocesseur si disponibles
+        ethics = EthicsGovernance(
+            model=model, 
+            preprocessor=preprocessor, 
+            feature_names=feature_names,
+            protected_attributes=['Sexe', 'Age_Category', 'FSA']
+        )
         
         # Démontrer les fonctionnalités
         anonymized_data = ethics.anonymize_data(X)
@@ -451,6 +517,16 @@ def main():
             print(f"  {attr}:")
             for group, metrics in stats.items():
                 print(f"    {group}: Exactitude = {metrics['accuracy']:.2f}")
+        
+        # Tenter de générer les explications SHAP si le modèle est disponible
+        if model is not None and feature_names is not None:
+            try:
+                print("\nGénération des explications SHAP...")
+                X_sample = X.head(5)  # Utiliser un petit échantillon pour démonstration
+                shap_values = ethics.explain_predictions(X_sample)
+                print("Explications SHAP générées. Visualisations enregistrées dans output/ethics/")
+            except Exception as e:
+                print(f"Erreur lors de la génération des explications SHAP: {str(e)}")
         
         # Générer le rapport éthique
         report_path = ethics.generate_ethics_report()

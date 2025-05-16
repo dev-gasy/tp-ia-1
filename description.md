@@ -314,7 +314,246 @@ L'approche recommandée est de commencer simple et potentiellement d'explorer de
 
 On nourrit l'algorithme choisi avec les données de l'ensemble d'entraînement. L'algorithme "apprend" des données pour trouver les relations entre les caractéristiques et la variable cible (`Classe_Employe`).
 
-## 3.3 Évaluation des modèles (Model Evaluation)
+## 3.3 Discussion des types d'approches possibles pour la modélisation et recommandation
+
+La sélection de l'approche de modélisation la plus appropriée est une étape cruciale qui influencera directement la qualité des prédictions et l'utilité de notre solution. Pour notre problème de classification binaire de la durée d'invalidité, plusieurs approches sont envisageables, chacune avec ses avantages et limitations.
+
+### Approches linéaires vs non-linéaires
+
+#### Approches linéaires
+
+**Régression Logistique**
+
+_Pourquoi la choisir ?_
+
+- Excellente interprétabilité : les coefficients indiquent clairement l'influence de chaque variable sur la probabilité
+- Simplicité d'implémentation et rapidité d'exécution
+- Base solide pour établir un modèle de référence (baseline)
+- Particulièrement adaptée aux contextes où l'explicabilité est exigée par les régulateurs
+
+_Limitations :_
+
+- Hypothèse de linéarité des relations entre variables qui peut être inappropriée pour certaines données d'assurance
+- Difficulté à capturer les interactions complexes entre les variables (ex: relation entre âge, type d'invalidité et durée)
+
+#### Approches non-linéaires
+
+**Arbres de Décision**
+
+_Pourquoi les choisir ?_
+
+- Capacité à modéliser des relations non-linéaires naturellement présentes dans les données d'invalidité
+- Bonne interprétabilité grâce à la structure visuelle des règles de décision
+- Gestion automatique des variables catégorielles sans encodage préalable
+- Robustesse aux valeurs aberrantes fréquentes dans les données d'assurance
+
+_Limitations :_
+
+- Tendance au surapprentissage, particulièrement problématique avec nos 5000 enregistrements
+- Sensibilité aux petites variations dans les données
+
+**Forêts Aléatoires (Random Forests)**
+
+_Pourquoi les choisir ?_
+
+- Robustesse contre le surapprentissage grâce à l'agrégation de multiples arbres
+- Excellente performance prédictive dans de nombreux problèmes de classification
+- Mesure intégrée de l'importance des caractéristiques, utile pour comprendre les facteurs influençant la durée d'invalidité
+- Gestion efficace des caractéristiques hautement dimensionnelles (comme les descripteurs textuels extraits des descriptions d'invalidité)
+
+_Limitations :_
+
+- Moins interprétable qu'un arbre de décision unique ou qu'une régression logistique
+- Temps d'entraînement plus long
+- Nécessite des méthodes additionnelles (comme SHAP) pour atteindre le niveau d'explicabilité requis dans le secteur de l'assurance
+
+**Réseaux de Neurones**
+
+_Pourquoi les choisir ?_
+
+- Capacité supérieure à modéliser des relations extrêmement complexes et non-linéaires
+- Particulièrement efficaces pour l'intégration de données textuelles non structurées (descriptions d'invalidité)
+- Potentiel de performance prédictive élevée avec un réglage approprié
+
+_Limitations :_
+
+- Opacité du processus décisionnel ("boîte noire"), problématique dans le secteur réglementé de l'assurance
+- Nécessité de grands volumes de données pour performance optimale (limitation avec 5000 enregistrements)
+- Risque élevé de surapprentissage sans régularisation appropriée
+- Complexité du réglage des hyperparamètres
+
+### Approches d'ensemble vs modèles uniques
+
+**Méthodes d'ensemble (boosting, stacking)**
+
+_Pourquoi les choisir ?_
+
+- Amélioration significative des performances par rapport aux modèles individuels
+- Réduction de la variance et du biais
+- Capacité à combiner les forces de différents types de modèles
+
+_Limitations :_
+
+- Complexité accrue du modèle final
+- Augmentation du temps de calcul
+- Réduction de l'interprétabilité
+
+### Recommandation d'approche
+
+Compte tenu de notre contexte spécifique (secteur de l'assurance, besoin d'explicabilité, volume de données modéré, importance des considérations éthiques), nous recommandons une **approche progressive** :
+
+1. **Phase initiale : Modèle de base interprétable**
+
+   - Commencer par une régression logistique comme modèle de référence
+   - Évaluer soigneusement les performances et identifier les limitations
+
+2. **Phase intermédiaire : Arbres de décision et forêts aléatoires**
+
+   - Implémenter un arbre de décision pour améliorer la capture des relations non-linéaires
+   - Déployer des forêts aléatoires pour améliorer la précision tout en conservant un niveau raisonnable d'interprétabilité
+   - Utiliser des techniques comme SHAP pour maintenir l'explicabilité requise
+
+3. **Phase avancée (optionnelle) : Techniques d'ensemble**
+
+   - Si les performances ne sont pas satisfaisantes, explorer le gradient boosting (XGBoost, LightGBM)
+   - Considérer les approches de stacking combinant plusieurs modèles
+
+4. **Phase expérimentale : Réseaux de neurones**
+   - Uniquement si l'explicabilité peut être garantie par des techniques comme LIME ou SHAP
+   - Particulièrement utile si les descriptions textuelles des invalidités s'avèrent déterminantes
+
+Cette approche progressive nous permettra de trouver le meilleur équilibre entre performance prédictive et explicabilité, tout en respectant les contraintes éthiques et réglementaires du secteur de l'assurance.
+
+## 3.4 Proposition d'approches et de mesures pour évaluer la qualité de la modélisation
+
+L'évaluation rigoureuse de la qualité des modèles est essentielle pour garantir que notre solution d'IA atteigne les objectifs d'affaires définis. Dans le contexte de notre projet d'assurance invalidité, cette évaluation doit être particulièrement méthodique compte tenu des enjeux éthiques, financiers et humains impliqués.
+
+### Approches d'évaluation recommandées
+
+#### 1. Validation croisée stratifiée (Stratified K-Fold Cross-Validation)
+
+_Pourquoi cette approche ?_
+
+- Préserve la distribution des classes dans chaque fold, critique avec notre déséquilibre de classes (84% cas longs, 16% cas courts)
+- Réduit la variance de l'estimation de performance
+- Maximise l'utilisation de nos données limitées (5000 enregistrements)
+- Permet d'évaluer la stabilité du modèle face à différents échantillons
+
+_Implémentation recommandée :_
+
+- 5 à 10 folds pour un bon compromis entre biais et variance
+- Stratification selon la variable cible `Classe_Employe`
+- Calcul des métriques de performance sur chaque fold puis moyenne
+
+#### 2. Validation temporelle (Time-Based Validation)
+
+_Pourquoi cette approche ?_
+
+- Respecte la temporalité des données d'assurance (1996-2006)
+- Simule les conditions réelles d'utilisation où le modèle prédit des cas futurs
+- Détecte les dérives temporelles potentielles dans les caractéristiques des invalidités
+
+_Implémentation recommandée :_
+
+- Division chronologique: entraînement sur 1996-2004, validation sur 2005, test sur 2006
+- Évaluation de la stabilité des performances à travers différentes périodes
+
+#### 3. Validation avec sur-échantillonnage équilibré
+
+_Pourquoi cette approche ?_
+
+- Contourne le problème de déséquilibre des classes (16% seulement de cas courts)
+- Évite que le modèle ne se spécialise uniquement sur la classe majoritaire
+- Évalue la capacité du modèle à identifier correctement les cas moins fréquents
+
+_Implémentation recommandée :_
+
+- Techniques comme SMOTE ou ADASYN pour l'ensemble d'entraînement
+- Conservation de la distribution originale dans les ensembles de validation et de test
+- Comparaison des performances avec et sans sur-échantillonnage
+
+### Mesures d'évaluation de la qualité
+
+#### 1. Métriques de classification générale
+
+**Matrice de confusion complète**
+
+- Vrais positifs (TP): Cas longs correctement identifiés
+- Faux positifs (FP): Cas courts incorrectement classés comme longs
+- Vrais négatifs (TN): Cas courts correctement identifiés
+- Faux négatifs (FN): Cas longs incorrectement classés comme courts
+
+**Exactitude (Accuracy)**
+
+- Pourcentage global de prédictions correctes: (TP + TN) / (TP + TN + FP + FN)
+- Pertinence: Mesure de base, mais insuffisante avec classes déséquilibrées
+- Objectif minimum: Dépasser les 80% pour la phase d'amélioration
+
+**Précision et Rappel par classe**
+
+- Précision (cas longs): TP / (TP + FP) - Proportion de cas réellement longs parmi ceux prédits longs
+- Rappel (cas longs): TP / (TP + FN) - Proportion de cas longs correctement identifiés
+- Précision et rappel similaires pour les cas courts
+
+**Score F1**
+
+- Moyenne harmonique entre précision et rappel: 2 _ (Précision _ Rappel) / (Précision + Rappel)
+- Particulièrement pertinent pour notre problème avec classes déséquilibrées
+
+#### 2. Métriques spécifiques au contexte d'affaires
+
+**Coût d'erreur asymétrique**
+
+- Impact financier différent selon le type d'erreur: un cas long attribué à un employé junior (FN) est potentiellement plus coûteux qu'un cas court attribué à un senior (FP)
+- Création d'une matrice de coût spécifique aux conséquences métier:
+  - FN: Coût élevé (retard de traitement, insatisfaction client, réattribution nécessaire)
+  - FP: Coût modéré (inefficacité des ressources)
+
+**Taux d'attribution optimale**
+
+- Pourcentage de cas attribués au bon niveau d'expérience d'employé
+- Directement aligné avec l'objectif d'affaires
+
+**Courbe ROC et aire sous la courbe (AUC)**
+
+- Évaluation de la capacité discriminative du modèle à différents seuils
+- AUC > 0.8 considéré comme bon, > 0.9 comme excellent
+
+**Courbe Précision-Rappel**
+
+- Plus informative que ROC avec classes déséquilibrées
+- Aire sous la courbe précision-rappel (PR-AUC)
+
+#### 3. Évaluation de la robustesse du modèle
+
+**Analyse de sensibilité**
+
+- Test de la stabilité des prédictions face à de petites variations des caractéristiques
+- Particulièrement important pour les variables sensibles comme l'âge, le sexe ou le FSA
+
+**Tests sur des sous-groupes démographiques**
+
+- Évaluation des performances sur différents segments (hommes/femmes, tranches d'âge, régions)
+- Détection des biais potentiels dans les prédictions
+
+**Évaluation de l'explicabilité**
+
+- Utilisation de SHAP ou LIME pour quantifier la cohérence des explications
+- Validation par des experts métier de la logique des décisions
+
+### Intégration dans le processus de développement
+
+Les approches et mesures décrites ci-dessus seront intégrées dans un processus d'évaluation complet:
+
+1. **Phase préliminaire**: Évaluation des modèles de base avec validation croisée stratifiée
+2. **Phase d'optimisation**: Affinement des hyperparamètres avec validation temporelle
+3. **Phase de sélection**: Comparaison des modèles finaux avec toutes les métriques
+4. **Phase de test final**: Évaluation sur l'ensemble de test indépendant et calcul du coût d'erreur métier
+5. **Phase de monitoring**: Surveillance continue des performances après déploiement
+
+Cette méthodologie d'évaluation rigoureuse nous permettra de sélectionner et d'optimiser le modèle le plus adapté au problème d'attribution des cas d'invalidité, tout en assurant sa conformité avec les exigences métier, éthiques et réglementaires.
+
+## 3.5 Évaluation des modèles (Model Evaluation)
 
 Après l'entraînement, il est essentiel d'évaluer la performance du ou des modèles développés.
 

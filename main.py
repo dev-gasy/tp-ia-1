@@ -94,9 +94,40 @@ def run_ethics_governance():
         from scripts import generate_ethics_visualizations
         generate_ethics_visualizations.main()
         
+        # Try to load model and preprocessor for SHAP explanations
+        import pickle
+        import os
+        import pandas as pd
+        
+        # Load best model if available
+        model = None
+        preprocessor = None
+        feature_names = None
+        
+        try:
+            if os.path.exists('models/best_model.pkl'):
+                with open('models/best_model.pkl', 'rb') as f:
+                    model = pickle.load(f)
+                print("Model loaded for ethics analysis")
+                
+                # Extract preprocessor from pipeline if possible
+                if hasattr(model, 'named_steps') and 'preprocessor' in model.named_steps:
+                    preprocessor = model.named_steps['preprocessor']
+                    print("Preprocessor extracted from model pipeline")
+            
+            # Try to load synthetic data for feature names
+            if os.path.exists('data/processed_data.csv'):
+                data = pd.read_csv('data/processed_data.csv')
+                feature_names = data.drop(['Duree_Invalidite', 'Classe_Employe', 'Description_Invalidite'], 
+                                         axis=1, errors='ignore').columns.tolist()
+                print(f"Feature names loaded: {len(feature_names)} features")
+        except Exception as e:
+            print(f"Note: Could not load model artifacts for SHAP: {str(e)}")
+            print("Ethics analysis will continue without SHAP explanations")
+        
         # Run ethics governance analysis
         from scripts import ethics_governance
-        ethics_governance.main()
+        ethics_governance.main(model=model, preprocessor=preprocessor, feature_names=feature_names)
         
         print("Ethics and governance analysis completed successfully!")
         return True
