@@ -187,11 +187,13 @@ def plot_confusion_matrix(
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=['Court (<= 180 jours)', 'Long (> 180 jours)'],
-                yticklabels=['Court (<= 180 jours)', 'Long (> 180 jours)'])
-    plt.xlabel('Prédiction')
-    plt.ylabel('Réalité')
-    plt.title(title)
-    plt.savefig(filename)
+                yticklabels=['Court (<= 180 jours)', 'Long (> 180 jours)'],
+                annot_kws={"size": 12})
+    plt.xlabel('Prédiction', fontsize=12)
+    plt.ylabel('Réalité', fontsize=12)
+    plt.title(title, fontsize=14)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
 
     return metrics
 
@@ -227,11 +229,12 @@ def plot_roc_curve(
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title(title)
-    plt.legend(loc="lower right")
-    plt.savefig(filename)
+    plt.xlabel('False Positive Rate', fontsize=12)
+    plt.ylabel('True Positive Rate', fontsize=12)
+    plt.title(title, fontsize=14)
+    plt.legend(loc="lower right", fontsize=12)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
 
     return roc_auc
 

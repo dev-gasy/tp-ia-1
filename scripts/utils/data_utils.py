@@ -165,4 +165,4 @@ def load_statcan_data(filepath: str = 'data/StatCanadaPopulationData.csv') -> pd
     """
     df = pd.read_csv(filepath)
     print(f"Loaded StatCan data with {df.shape[0]} rows and {df.shape[1]} columns")
-    return df 
+    return df

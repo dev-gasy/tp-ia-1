@@ -7,7 +7,7 @@ Module optimisé suivant le principe DRY (Don't Repeat Yourself).
 """
 
 import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,7 +28,7 @@ class CorrelationMatrixGenerator:
         """
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # Configuration du style de visualisation
         self._setup_visualization_style()
 
@@ -37,6 +37,7 @@ class CorrelationMatrixGenerator:
         sns.set_style('whitegrid')
         plt.rcParams['font.family'] = 'DejaVu Sans'
         plt.rcParams['axes.unicode_minus'] = False
+        plt.rcParams['font.size'] = 14
 
     def load_data(self, data_path: str = 'data/processed_data.csv') -> pd.DataFrame:
         """
@@ -70,14 +71,14 @@ class CorrelationMatrixGenerator:
 
         # Fixer la graine pour la reproductibilité
         np.random.seed(42)
-        
+
         # Variables quantitatives
         df = pd.DataFrame({
             'Age': np.random.normal(40, 10, n_samples).astype(int),
             'Salaire': np.random.normal(45000, 15000, n_samples).astype(int),
             'Duree_Invalidite': np.random.gamma(5, 30, n_samples).astype(int),
             'Delai_Traitement': np.random.gamma(2, 20, n_samples).astype(int),
-            
+
             # Variables qualitatives
             'Sexe': np.random.choice(['M', 'F'], n_samples),
             'Code_Emploi': np.random.choice(['A1', 'B2', 'C3', 'D4'], n_samples),
@@ -86,10 +87,10 @@ class CorrelationMatrixGenerator:
             'Is_Winter': np.random.choice([0, 1], n_samples),
             'Is_Summer': np.random.choice([0, 1], n_samples)
         })
-        
+
         # Ajouter une variable cible
         df['Classe_Employe'] = np.where(df['Duree_Invalidite'] > 180, 1, 0)
-        
+
         return df
 
     def _encode_categorical_variables(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -103,18 +104,18 @@ class CorrelationMatrixGenerator:
             DataFrame avec les variables catégorielles encodées
         """
         df_encoded = df.copy()
-        
+
         # Identifier les colonnes catégorielles
         categorical_cols = df.select_dtypes(include=['object']).columns
-        
+
         if len(categorical_cols) == 0:
             return df_encoded
-            
+
         # Encoder chaque colonne catégorielle
         encoder = LabelEncoder()
         for col in categorical_cols:
             df_encoded[col] = encoder.fit_transform(df[col])
-            
+
         return df_encoded
 
     def _get_variable_types(self, df: pd.DataFrame) -> Tuple[List[str], List[str]]:
@@ -132,12 +133,12 @@ class CorrelationMatrixGenerator:
         return quant_vars, qual_vars
 
     def _generate_correlation_matrix(
-        self,
-        df: pd.DataFrame,
-        title: str,
-        filename: str,
-        figsize: Tuple[int, int] = (12, 10),
-        annot_kws: Optional[Dict] = None
+            self,
+            df: pd.DataFrame,
+            title: str,
+            filename: str,
+            figsize: Tuple[int, int] = (12, 10),
+            annot_kws: Optional[Dict] = None
     ) -> None:
         """
         Génère et sauvegarde une matrice de corrélation.
@@ -150,34 +151,34 @@ class CorrelationMatrixGenerator:
             annot_kws: Paramètres pour les annotations
         """
         plt.figure(figsize=figsize)
-        
+
         # Calculer la matrice de corrélation
         corr_matrix = df.corr()
-        
+
         # Masque pour afficher seulement la moitié inférieure
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-        
+
         # Paramètres par défaut pour les annotations
         if annot_kws is None:
-            annot_kws = {}
-            
+            annot_kws = {"size": 10}
+
         # Créer le heatmap
         sns.heatmap(
-            corr_matrix, 
-            mask=mask, 
-            annot=True, 
-            fmt=".2f", 
+            corr_matrix,
+            mask=mask,
+            annot=True,
+            fmt=".2f",
             cmap="coolwarm",
-            linewidths=0.5, 
-            vmin=-1, 
-            vmax=1, 
+            linewidths=0.5,
+            vmin=-1,
+            vmax=1,
             center=0,
             annot_kws=annot_kws
         )
-        
+
         plt.title(title, fontsize=16)
         plt.tight_layout()
-        
+
         # Sauvegarder la figure
         output_path = os.path.join(self.output_dir, f"{filename}.png")
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
@@ -192,33 +193,35 @@ class CorrelationMatrixGenerator:
         """
         # Identifier les types de variables
         quant_vars, qual_vars = self._get_variable_types(df)
-        
+
         # Encoder les variables catégorielles
         df_encoded = self._encode_categorical_variables(df)
-        
+
         # 1. Matrice pour variables quantitatives
         if quant_vars:
             self._generate_correlation_matrix(
                 df=df[quant_vars],
                 title="Matrice de Corrélation - Variables Quantitatives",
-                filename="correlation_matrix_quantitative"
+                filename="correlation_matrix_quantitative",
+                annot_kws={"size": 10}
             )
-        
+
         # 2. Matrice pour variables qualitatives
         if qual_vars:
             self._generate_correlation_matrix(
                 df=df_encoded[qual_vars],
                 title="Matrice de Corrélation - Variables Qualitatives",
-                filename="correlation_matrix_qualitative"
+                filename="correlation_matrix_qualitative",
+                annot_kws={"size": 10}
             )
-        
+
         # 3. Matrice pour toutes les variables
         self._generate_correlation_matrix(
             df=df_encoded,
             title="Matrice de Corrélation - Toutes Variables",
             filename="correlation_matrix",
             figsize=(14, 12),
-            annot_kws={"size": 8}
+            annot_kws={"size": 10}
         )
 
     def run(self):
@@ -226,13 +229,13 @@ class CorrelationMatrixGenerator:
         Génère toutes les matrices de corrélation
         """
         print("Generating correlation matrices...")
-        
+
         # Load data
         df = self.load_data()
         if df is None:
             # Create synthetic data if real data loading fails
             df = self._create_demo_data()
-        
+
         # Generate correlation matrices
         self.generate_all_correlation_matrices(df)
         print("All correlation matrices generated.")
@@ -243,10 +246,10 @@ def main() -> None:
     try:
         # Créer l'instance du générateur
         generator = CorrelationMatrixGenerator()
-        
+
         # Générer les matrices
         generator.run()
-        
+
         print("Génération des matrices de corrélation terminée avec succès.")
     except Exception as e:
         print(f"Erreur lors de la génération des matrices: {str(e)}")

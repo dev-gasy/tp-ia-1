@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
-API FastAPI pour la prédiction de durée d'invalidité
-Ce script crée une API REST pour servir le modèle entraîné et faire des prédictions
-sur de nouvelles réclamations d'assurance.
+Simple API for testing
 """
 
 from typing import Optional
+
 from fastapi import FastAPI
 from pydantic import BaseModel
+
 
 # Define the models
 class ClaimData(BaseModel):
@@ -17,8 +17,10 @@ class ClaimData(BaseModel):
     Sexe: Optional[str] = None
     Code_Emploi: Optional[int] = None
 
+
 class PredictionRequest(BaseModel):
     data: ClaimData
+
 
 class PredictionResponse(BaseModel):
     prediction: int
@@ -26,16 +28,20 @@ class PredictionResponse(BaseModel):
     probability: Optional[float] = None
     employee_assignment: Optional[str] = None
 
+
 # Create a new FastAPI app
-app = FastAPI(title="Insurance Claim Duration Prediction API")
+app = FastAPI(title="Test API")
+
 
 @app.get("/")
 async def root():
     return {"message": "API is running"}
 
+
 @app.get("/health")
 async def health():
     return {"status": "healthy", "model_loaded": True}
+
 
 @app.get("/model_info")
 async def model_info():
@@ -44,6 +50,7 @@ async def model_info():
         "classifier_type": "RandomForestClassifier",
         "description": "Classification model for predicting claim duration"
     }
+
 
 @app.get("/model/info")
 async def model_detail_info():
@@ -59,6 +66,20 @@ async def model_detail_info():
         }
     }
 
+
+@app.get("/model/feature_importance")
+async def feature_importance():
+    return {
+        "feature_importance": [
+            {"feature": "Age", "importance": 0.2},
+            {"feature": "Sexe", "importance": 0.05},
+            {"feature": "Code_Emploi", "importance": 0.15},
+            {"feature": "Salaire_Annuel", "importance": 0.1},
+            {"feature": "Description_Invalidite", "importance": 0.5}
+        ]
+    }
+
+
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
     return {
@@ -68,6 +89,8 @@ async def predict(request: PredictionRequest):
         "employee_assignment": "Experienced employee"
     }
 
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    uvicorn.run(app, host="0.0.0.0", port=8001)

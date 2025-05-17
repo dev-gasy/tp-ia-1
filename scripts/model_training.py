@@ -250,7 +250,7 @@ def evaluate_model(
         model_name: str
 ) -> Dict[str, Union[str, float]]:
     """
-    Évaluer la performance du modèle sur l'ensemble de test
+    Évaluer les performances d'un modèle entraîné
     
     Args:
         model: Modèle entraîné
@@ -259,26 +259,25 @@ def evaluate_model(
         model_name: Nom du modèle
         
     Returns:
-        Dictionnaire avec les métriques de performance du modèle
+        Dictionnaire contenant les métriques de performance
     """
     print(f"\nEvaluating {model_name} model...")
 
-    # S'assurer que le répertoire de sortie existe
-    os.makedirs('output', exist_ok=True)
-
-    # Faire des prédictions
+    # Time prediction
+    start_time = time.time()
     y_pred = model.predict(X_test)
+    inference_time = time.time() - start_time
 
-    # Calculer les métriques en utilisant la fonction utils
+    # Calculer les métriques de base
     metrics = utils.calculate_classification_metrics(y_test, y_pred)
 
-    # Afficher les métriques
+    # Afficher les métriques principales
     print(f"Accuracy: {metrics['accuracy']:.4f}")
     print(f"Precision: {metrics['precision']:.4f}")
     print(f"Recall: {metrics['recall']:.4f}")
     print(f"F1 Score: {metrics['f1']:.4f}")
 
-    # Créer un nom de fichier sécurisé à partir du nom du modèle
+    # Sauvegarder le nom du modèle dans un format compatible avec les fichiers
     safe_name = model_name.replace(" ", "_").lower()
 
     # Générer la matrice de confusion en utilisant la fonction utils
@@ -319,8 +318,17 @@ def evaluate_model(
         'accuracy': metrics['accuracy'],
         'precision': metrics['precision'],
         'recall': metrics['recall'],
-        'f1': metrics['f1']
+        'f1_score': metrics['f1'],
+        'training_time': 0.0,
+        'inference_time': inference_time
     }
+
+    # Add confusion matrix metrics
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+    result['true_positives'] = int(tp)
+    result['false_positives'] = int(fp)
+    result['true_negatives'] = int(tn)
+    result['false_negatives'] = int(fn)
 
     if roc_auc is not None:
         result['roc_auc'] = roc_auc
@@ -349,7 +357,7 @@ def compare_models(model_results: List[Dict[str, Union[str, float]]]) -> str:
 
     # Tracer la comparaison
     plt.figure(figsize=(12, 8))
-    metrics = ['accuracy', 'precision', 'recall', 'f1']
+    metrics = ['accuracy', 'precision', 'recall', 'f1_score']
 
     # Définir la largeur des barres
     barWidth = 0.2
@@ -369,9 +377,10 @@ def compare_models(model_results: List[Dict[str, Union[str, float]]]) -> str:
     plt.title('Performance Comparison of Different Models')
     plt.legend()
     plt.savefig('output/model_comparison.png')
+    plt.close()
 
     # Trouver le meilleur modèle basé sur le score F1
-    best_model_idx = results_df['f1'].idxmax()
+    best_model_idx = results_df['f1_score'].idxmax()
     best_model_name = results_df.loc[best_model_idx, 'model_name']
     print(f"\nBest model based on F1 score: {best_model_name}")
 
@@ -386,52 +395,52 @@ def main() -> BaseEstimator:
         Le meilleur modèle sélectionné
     """
     print("Starting model training and evaluation...")
-    
+
     # Traiter les données
     X_train, X_test, y_train, y_test, preprocessor, feature_names = process_data()
-    
+
     # Entraîner différents modèles
     models = []
-    
+
     # 1. Régression Logistique
     logistic_model = train_logistic_regression(X_train, y_train, preprocessor)
     models.append(("Régression Logistique", logistic_model))
-    
+
     # 2. Arbre de Décision
     decision_tree_model = train_decision_tree(X_train, y_train, preprocessor)
     models.append(("Arbre de Décision", decision_tree_model))
-    
+
     # 3. Random Forest
     random_forest_model = train_random_forest(X_train, y_train, preprocessor)
     models.append(("Random Forest", random_forest_model))
-    
+
     # 4. Réseau de Neurones
     neural_network_model = train_neural_network(X_train, y_train, preprocessor)
     models.append(("Réseau de Neurones", neural_network_model))
-    
+
     # Évaluer et comparer les modèles
     model_results = []
-    
+
     for name, model in models:
         result = evaluate_model(model, X_test, y_test, name)
         model_results.append(result)
-    
+
     # Comparer les modèles et sélectionner le meilleur
     best_model_name = compare_models(model_results)
-    
+
     # Trouver le meilleur modèle parmi ceux entraînés
     best_model = None
     for name, model in models:
         if name == best_model_name:
             best_model = model
             break
-    
+
     if best_model is None:
         raise ValueError(f"Le modèle {best_model_name} n'a pas été trouvé parmi les modèles entraînés.")
-    
+
     # Implémenter les considérations éthiques et de gouvernance
     print("\nExécution des analyses éthiques et de gouvernance...")
-    
+
     # Initialiser le module d'éthique et de gouvernance
     ethics = EthicsGovernance(
         model=best_model,
@@ -439,14 +448,15 @@ def main() -> BaseEstimator:
         feature_names=feature_names,
         protected_attributes=['Sexe', 'Age_Category', 'FSA']
     )
-    
+
     # Vérifier si les colonnes protégées existent dans les données de test
     X_test_df = pd.DataFrame(X_test, columns=feature_names)
-    
+
     # Générer des prédictions pour les analyses d'éthique
-    best_model_pipeline = best_model if isinstance(best_model, Pipeline) else Pipeline([('preprocessor', preprocessor), ('classifier', best_model)])
+    best_model_pipeline = best_model if isinstance(best_model, Pipeline) else Pipeline(
+        [('preprocessor', preprocessor), ('classifier', best_model)])
     y_pred = best_model_pipeline.predict(X_test)
-    
+
     try:
         # Analyser les biais potentiels (si les attributs protégés sont présents)
         protected_cols = [col for col in ethics.protected_attributes if col in X_test_df.columns]
@@ -456,23 +466,23 @@ def main() -> BaseEstimator:
             print("Analyse de biais terminée. Visualisations enregistrées dans output/ethics/")
         else:
             print("Aucun attribut protégé disponible dans les données pour l'analyse de biais")
-        
+
         # Générer des explications pour les prédictions 
         try:
             shap_values = ethics.explain_predictions(X_test_df)
             print("Explications SHAP générées. Visualisations enregistrées dans output/ethics/")
         except Exception as e:
             print(f"Erreur lors de la génération des explications SHAP: {str(e)}")
-        
+
         # Générer un rapport d'éthique complet
         report_path = ethics.generate_ethics_report()
         print(f"Rapport d'éthique généré: {report_path}")
-        
+
     except Exception as e:
         print(f"Erreur lors de l'analyse éthique: {str(e)}")
-    
+
     print("\nModel training and evaluation completed!")
-    
+
     return best_model
 
 

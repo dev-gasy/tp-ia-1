@@ -6,10 +6,10 @@ Script principal pour générer toutes les visualisations nécessaires au rappor
 Ce script coordonne la génération de toutes les visualisations en un seul endroit.
 """
 
-import os
 import importlib.util
+import os
 import sys
-from typing import Dict, List, Optional
+from typing import Dict
 
 
 def ensure_module_exists(module_name: str, file_path: str) -> bool:
@@ -27,22 +27,22 @@ def ensure_module_exists(module_name: str, file_path: str) -> bool:
         # Vérifier si le module est déjà importé
         if module_name in sys.modules:
             return True
-            
+
         # Vérifier si le fichier existe
         if not os.path.exists(file_path):
             print(f"Le fichier {file_path} n'existe pas.")
             return False
-            
+
         # Importer le module dynamiquement
         spec = importlib.util.spec_from_file_location(module_name, file_path)
         if spec is None:
             print(f"Impossible de charger le module {module_name} depuis {file_path}.")
             return False
-            
+
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
         spec.loader.exec_module(module)
-        
+
         return True
     except Exception as e:
         print(f"Erreur lors de l'importation du module {module_name}: {str(e)}")
@@ -61,10 +61,10 @@ def generate_all_visualizations(output_dir: str = 'output') -> Dict[str, bool]:
     """
     # Assurer que le répertoire de sortie existe
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Résultat des opérations
     results = {}
-    
+
     # Liste des modules à exécuter
     modules = [
         {
@@ -83,15 +83,15 @@ def generate_all_visualizations(output_dir: str = 'output') -> Dict[str, bool]:
             'function': 'generate_roc_comparison'
         }
     ]
-    
+
     # Exécuter chaque module
     for module_info in modules:
         module_name = module_info['name']
         file_path = module_info['path']
         function_name = module_info['function']
-        
+
         print(f"\n=== Génération de {module_name} ===")
-        
+
         # Vérifier et importer le module
         if ensure_module_exists(module_name, file_path):
             try:
@@ -106,7 +106,7 @@ def generate_all_visualizations(output_dir: str = 'output') -> Dict[str, bool]:
         else:
             results[module_name] = False
             print(f"✗ Module {module_name} non disponible")
-    
+
     return results
 
 
@@ -120,17 +120,17 @@ def print_summary(results: Dict[str, bool]) -> None:
     print("\n=== Résumé de la génération ===")
     successful = [name for name, success in results.items() if success]
     failed = [name for name, success in results.items() if not success]
-    
+
     if successful:
         print(f"Générations réussies ({len(successful)}):")
         for name in successful:
             print(f"  ✓ {name}")
-    
+
     if failed:
         print(f"Générations échouées ({len(failed)}):")
         for name in failed:
             print(f"  ✗ {name}")
-    
+
     success_rate = len(successful) / len(results) * 100 if results else 0
     print(f"\nTaux de réussite: {success_rate:.1f}% ({len(successful)}/{len(results)})")
 
@@ -139,13 +139,13 @@ if __name__ == "__main__":
     try:
         # Générer toutes les visualisations
         results = generate_all_visualizations()
-        
+
         # Afficher le résumé
         print_summary(results)
-        
+
         # Code de sortie basé sur le succès
         success = all(results.values())
         sys.exit(0 if success else 1)
     except Exception as e:
         print(f"Erreur lors de la génération des visualisations: {str(e)}")
-        sys.exit(1) 
+        sys.exit(1)

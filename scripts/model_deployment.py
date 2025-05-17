@@ -11,17 +11,9 @@ import os
 import pickle
 import re
 
-import nltk
 import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify
-from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
-from nltk.tokenize import word_tokenize
-
-# Download NLTK resources (only need to run this once)
-nltk.download('punkt', quiet=True)
-nltk.download('stopwords', quiet=True)
 
 app = Flask(__name__)
 
@@ -47,7 +39,7 @@ def load_model(model_path='models/best_model.pkl'):
 
 def clean_text(text):
     """
-    Clean and normalize text data
+    Clean and normalize text data - simplified version without NLTK
     """
     if not isinstance(text, str):
         return ""
@@ -58,16 +50,24 @@ def clean_text(text):
     # Remove special characters and digits
     text = re.sub(r'[^a-zA-Z\s]', '', text)
 
-    # Tokenize
-    tokens = word_tokenize(text)
+    # Split into words
+    tokens = text.split()
+
+    # Basic English stopwords
+    stop_words = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
+                  'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his',
+                  'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself',
+                  'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which',
+                  'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are',
+                  'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having',
+                  'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if',
+                  'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for',
+                  'with', 'about', 'against', 'between', 'into', 'through', 'during',
+                  'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in',
+                  'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once'}
 
     # Remove stopwords
-    stop_words = set(stopwords.words('english'))
     tokens = [word for word in tokens if word not in stop_words]
-
-    # Stemming
-    stemmer = PorterStemmer()
-    tokens = [stemmer.stem(word) for word in tokens]
 
     return ' '.join(tokens)
 
@@ -136,7 +136,7 @@ def predict():
         data = request.get_json(force=True)
 
         # Preprocess data
-        processed_data = preprocess_claim_data(data)
+        processed_data = preprocess_claim_data(data.get('data', data))
 
         # Make prediction
         prediction = model.predict(processed_data)
@@ -152,7 +152,7 @@ def predict():
             'prediction': int(prediction[0]),
             'prediction_label': 'Long (> 180 jours)' if prediction[0] == 1 else 'Court (<= 180 jours)',
             'employee_assignment': 'Employé expérimenté' if prediction[0] == 1 else 'Employé peu expérimenté',
-            'probability_long_duration': probability
+            'probability': probability
         }
 
         return jsonify(result)
@@ -170,6 +170,35 @@ def health():
         return jsonify({'status': 'healthy', 'model_loaded': True}), 200
     else:
         return jsonify({'status': 'unhealthy', 'model_loaded': False}), 503
+
+
+@app.route('/model_info', methods=['GET'])
+def model_info():
+    """
+    Endpoint to get information about the model
+    """
+    if model is None:
+        return jsonify({'error': 'Model not loaded'}), 503
+
+    # Get model information
+    try:
+        model_type = type(model).__name__
+
+        # Try to get model parameters if available
+        try:
+            params = model.get_params()
+        except:
+            params = {"info": "Model parameters not available"}
+
+        return jsonify({
+            'model_type': model_type,
+            'model_parameters': params,
+            'features_used': 15,  # Simplified
+            'last_updated': '2023-04-15',  # Example date
+            'version': '1.0.0'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/sample_input', methods=['GET'])
@@ -204,13 +233,13 @@ def main():
         return
 
     # Start Flask application
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5002))
     app.run(host='0.0.0.0', port=port, debug=False)
 
     print(f"API is running on port {port}")
 
 
 if __name__ == "__main__":
-    # Use a different port to avoid conflicts with macOS AirPlay (port 5000)
-    app.run(host='0.0.0.0', port=5001)
-    # main()
+    # Use port 5002 to avoid conflicts
+    os.environ['PORT'] = '5002'
+    main()

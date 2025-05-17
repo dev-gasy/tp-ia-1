@@ -11,9 +11,10 @@ l'anonymisation des données, l'explicabilité des prédictions et la surveillan
 
 import logging
 import os
-import pandas as pd
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
 import shap
 from sklearn.metrics import confusion_matrix
@@ -37,7 +38,7 @@ os.makedirs("output/ethics", exist_ok=True)
 
 class EthicsGovernance:
     """Classe principale pour la gestion des aspects éthiques et de gouvernance du modèle."""
-    
+
     def __init__(self, model=None, preprocessor=None, feature_names=None, protected_attributes=None):
         """
         Initialiser le module d'éthique et de gouvernance.
@@ -52,9 +53,9 @@ class EthicsGovernance:
         self.preprocessor = preprocessor
         self.feature_names = feature_names or []
         self.protected_attributes = protected_attributes or ['Sexe', 'Age_Category', 'FSA']
-        
+
         logger.info("Module d'éthique et de gouvernance initialisé")
-        
+
     def anonymize_data(self, data, sensitive_columns=None):
         """
         Anonymise les données sensibles tout en préservant leur utilité analytique.
@@ -68,9 +69,9 @@ class EthicsGovernance:
         """
         if sensitive_columns is None:
             sensitive_columns = ['FSA', 'Annee_Naissance', 'Description_Invalidite']
-            
+
         anonymized_data = data.copy()
-        
+
         # Masquer les données sensibles
         for col in sensitive_columns:
             if col in anonymized_data.columns:
@@ -90,10 +91,10 @@ class EthicsGovernance:
                 else:
                     # Pour les autres colonnes, utiliser une technique appropriée
                     anonymized_data[col] = f"ANONYMIZED_{col.upper()}"
-        
+
         logger.info(f"Données anonymisées pour les colonnes: {sensitive_columns}")
         return anonymized_data
-    
+
     def detect_bias(self, X, y, y_pred, output_dir="output/ethics"):
         """
         Analyse les prédictions du modèle pour détecter les biais potentiels
@@ -109,50 +110,50 @@ class EthicsGovernance:
             dict: Statistiques de biais
         """
         bias_stats = {}
-        
+
         os.makedirs(output_dir, exist_ok=True)
-        
+
         for attribute in self.protected_attributes:
             if attribute not in X.columns:
                 logger.warning(f"Attribut protégé {attribute} non trouvé dans les données")
                 continue
-                
+
             # Créer un DataFrame pour l'analyse
             bias_df = pd.DataFrame({
                 'attribute': X[attribute],
                 'real': y,
                 'predicted': y_pred
             })
-            
+
             # Pour chaque groupe, calculer le taux de faux positifs et faux négatifs
             groups = bias_df['attribute'].unique()
             group_stats = {}
-            
+
             for group in groups:
                 group_data = bias_df[bias_df['attribute'] == group]
-                
+
                 # Calculer la matrice de confusion
                 cm = confusion_matrix(group_data['real'], group_data['predicted'])
-                
+
                 # Extraire les statistiques
                 if cm.shape == (2, 2):  # Vérifier si c'est une matrice 2x2
                     tn, fp, fn, tp = cm.ravel()
                     false_positive_rate = fp / (fp + tn) if (fp + tn) > 0 else 0
                     false_negative_rate = fn / (fn + tp) if (fn + tp) > 0 else 0
                     accuracy = (tp + tn) / (tp + tn + fp + fn)
-                    
+
                     group_stats[group] = {
                         'false_positive_rate': false_positive_rate,
                         'false_negative_rate': false_negative_rate,
                         'accuracy': accuracy,
                         'sample_size': len(group_data)
                     }
-            
+
             bias_stats[attribute] = group_stats
-            
+
             # Visualisation améliorée
             plt.figure(figsize=(10, 6))
-            
+
             # Préparer les données pour le graphique
             plot_data = []
             for group, stats in group_stats.items():
@@ -171,47 +172,47 @@ class EthicsGovernance:
                     'metric': 'Exactitude',
                     'value': stats['accuracy']
                 })
-            
+
             plot_df = pd.DataFrame(plot_data)
-            
+
             # Définir une palette de couleurs distincte et professionnelle
             colors = ['#3498db', '#e74c3c', '#2ecc71']  # Bleu, Rouge, Vert
-            
+
             # Créer le graphique avec un style amélioré
             ax = sns.barplot(
-                x='group', y='value', hue='metric', 
+                x='group', y='value', hue='metric',
                 data=plot_df, palette=colors
             )
-            
+
             # Ajouter des étiquettes de valeur sur chaque barre
             for container in ax.containers:
                 ax.bar_label(container, fmt='%.2f', fontsize=8)
-            
+
             # Améliorer le titre et les étiquettes
             plt.title(f'Analyse de biais par {attribute}', fontsize=14, fontweight='bold')
             plt.xlabel(attribute, fontsize=12)
             plt.ylabel('Valeur', fontsize=12)
-            
+
             # Ajuster la légende
             plt.legend(title='Métrique', title_fontsize=10, fontsize=9, loc='upper right')
-            
+
             # Grille pour plus de lisibilité
             plt.grid(axis='y', linestyle='--', alpha=0.3)
-            
+
             # Régler la limite de l'axe Y pour une meilleure visualisation
             plt.ylim(0, 1.05)  # Métriques sont entre 0 et 1
-            
+
             # Ajuster la mise en page
             plt.tight_layout()
-            
+
             # Sauvegarder l'image avec une haute résolution
             plt.savefig(f"{output_dir}/bias_analysis_{attribute}.png", dpi=300, bbox_inches='tight')
             plt.close()
-            
+
             logger.info(f"Analyse de biais effectuée pour l'attribut {attribute}")
-        
+
         return bias_stats
-    
+
     def explain_predictions(self, X, X_processed=None, sample_size=5, output_dir="output/ethics"):
         """
         Génère des explications pour les prédictions du modèle à l'aide de SHAP.
@@ -228,7 +229,7 @@ class EthicsGovernance:
         if self.model is None:
             logger.error("Aucun modèle n'a été fourni pour l'explication")
             return None
-            
+
         os.makedirs(output_dir, exist_ok=True)
 
         # Échantillonner pour l'explication
@@ -237,11 +238,11 @@ class EthicsGovernance:
             X_sample = X.iloc[indices]
         else:
             X_sample = X
-            
+
         # Tentative d'explication avec différentes approches
         try:
             logger.info("Tentative d'explication avec l'explainer SHAP")
-            
+
             # Approche 1: Si un préprocesseur est disponible, tenter de l'utiliser
             if self.preprocessor is not None:
                 try:
@@ -249,20 +250,20 @@ class EthicsGovernance:
                     # Vérifier si le préprocesseur est déjà ajusté
                     if hasattr(self.preprocessor, 'transform'):
                         X_processed = self.preprocessor.transform(X_sample)
-                        
+
                         # Créer l'explainer SHAP
                         logger.info("Création de l'explainer SHAP")
                         if hasattr(self.model, 'predict_proba'):
                             explainer = shap.Explainer(self.model.predict_proba)
                         else:
                             explainer = shap.Explainer(self.model)
-                            
+
                         # Obtenir les valeurs SHAP
                         shap_values = explainer(X_processed)
                 except Exception as e:
                     logger.warning(f"Échec du prétraitement: {str(e)}")
                     X_processed = None
-            
+
             # Approche 2: Si le prétraitement échoue ou n'est pas disponible, utiliser directement le modèle
             if X_processed is None:
                 logger.info("Explication directe sans prétraitement")
@@ -273,22 +274,22 @@ class EthicsGovernance:
                 else:
                     # Créer un KernelExplainer qui n'a pas besoin de prétraitement
                     background = shap.maskers.Independent(X_sample, max_samples=100)
-                    
+
                     if hasattr(self.model, 'predict_proba'):
                         explainer = shap.KernelExplainer(self.model.predict_proba, background)
                         shap_values = explainer.shap_values(X_sample)
                     else:
                         explainer = shap.KernelExplainer(self.model.predict, background)
                         shap_values = explainer.shap_values(X_sample)
-            
+
             # Visualisation simplifiée des valeurs SHAP
             plt.figure(figsize=(12, 8))
-            
+
             # Utiliser une visualisation compatible avec différents formats de valeurs SHAP
             if isinstance(shap_values, list):
                 # Pour les formats de sortie plus anciens (liste de matrices)
                 shap.summary_plot(
-                    shap_values[1] if len(shap_values) > 1 else shap_values[0], 
+                    shap_values[1] if len(shap_values) > 1 else shap_values[0],
                     X_sample,
                     feature_names=self.feature_names if self.feature_names else X_sample.columns,
                     show=False
@@ -296,34 +297,34 @@ class EthicsGovernance:
             else:
                 # Pour les nouveaux formats SHAP
                 shap.summary_plot(
-                    shap_values, 
+                    shap_values,
                     X_sample,
                     feature_names=self.feature_names if self.feature_names else X_sample.columns,
                     show=False
                 )
-                
+
             plt.title("Importance des caractéristiques (Valeurs SHAP)")
             plt.tight_layout()
             plt.savefig(f"{output_dir}/shap_summary.png", dpi=300)
             plt.close()
-            
+
             logger.info(f"Explications SHAP générées pour {sample_size} instances")
             return shap_values
-            
+
         except Exception as e:
             logger.error(f"Erreur lors de la génération des explications SHAP: {str(e)}")
-            
+
             # Créer des valeurs d'importance synthétiques si nécessaire
             plt.figure(figsize=(12, 8))
-            
+
             # Tenter d'obtenir feature_importances_ directement ou depuis un modèle dans Pipeline
             importances = None
-            
+
             # Cas 1: Le modèle a directement feature_importances_
             if hasattr(self.model, 'feature_importances_'):
                 importances = self.model.feature_importances_
                 logger.info("Feature importances extraites directement du modèle")
-            
+
             # Cas 2: Le modèle est une Pipeline scikit-learn
             elif hasattr(self.model, 'named_steps'):
                 # Chercher un composant avec feature_importances_ (typiquement 'classifier' ou estimateur final)
@@ -332,10 +333,11 @@ class EthicsGovernance:
                         importances = step_model.feature_importances_
                         logger.info(f"Feature importances extraites du composant '{step_name}' de la Pipeline")
                         break
-            
+
             # Cas 3: Aucune feature_importance_ trouvée - créer des données synthétiques
             if importances is None:
-                logger.warning("Aucune feature_importances_ trouvée. Création de données synthétiques pour démonstration.")
+                logger.warning(
+                    "Aucune feature_importances_ trouvée. Création de données synthétiques pour démonstration.")
                 # Créer des importances factices basées sur les noms de caractéristiques
                 if self.feature_names:
                     feature_names = self.feature_names
@@ -343,16 +345,16 @@ class EthicsGovernance:
                     feature_names = list(X.columns)
                 else:
                     feature_names = [f"Caractéristique {i}" for i in range(10)]
-                
+
                 # Générer des valeurs d'importance aléatoires mais déterministes
                 np.random.seed(42)  # Pour reproductibilité
                 importances = np.random.exponential(0.5, size=len(feature_names))
                 importances = importances / importances.sum()  # Normaliser
                 logger.info(f"Données d'importance synthétiques générées pour {len(feature_names)} caractéristiques")
-            
+
             # Préparer la visualisation
             indices = np.argsort(importances)[::-1]
-            
+
             # Assurer que feature_names a la bonne longueur
             if self.feature_names and len(self.feature_names) == len(importances):
                 feature_names = self.feature_names
@@ -363,44 +365,44 @@ class EthicsGovernance:
             else:
                 feature_names = [f"Caractéristique {i}" for i in range(len(importances))]
                 logger.warning(f"Noms génériques utilisés pour {len(importances)} caractéristiques")
-            
+
             # Limiter à 15 caractéristiques pour la lisibilité
             top_n = min(15, len(indices))
             top_indices = indices[:top_n]
             top_importances = importances[top_indices]
             top_names = [feature_names[i] for i in top_indices]
-            
+
             # Créer le graphique horizontal avec des couleurs attrayantes
             colors = plt.cm.viridis(np.linspace(0.1, 0.9, top_n))
             bars = plt.barh(range(top_n), top_importances, color=colors)
-            
+
             # Ajouter les valeurs à la fin des barres
             for i, v in enumerate(top_importances):
                 plt.text(v + 0.01, i, f'{v:.3f}', va='center')
-            
+
             # Ajuster les étiquettes et l'apparence
             plt.yticks(range(top_n), top_names)
             plt.title("Importance des caractéristiques", fontsize=16, fontweight='bold')
             plt.xlabel("Importance relative", fontsize=12)
             plt.ylabel("Caractéristiques", fontsize=12)
             plt.xlim(0, max(top_importances) * 1.15)  # Espace pour les annotations
-            
+
             # Améliorer l'apparence
             plt.grid(axis='x', linestyle='--', alpha=0.7)
             plt.tight_layout()
-            
+
             # Ajouter une bordure pour plus de netteté
             for spine in plt.gca().spines.values():
                 spine.set_visible(True)
                 spine.set_color('gray')
                 spine.set_linewidth(0.5)
-            
+
             plt.tight_layout()
             plt.savefig(f"{output_dir}/feature_importance_fallback.png", dpi=300)
             plt.close()
-            
+
             return None
-    
+
     def monitor_data_drift(self, X_train, X_new):
         """
         Surveille la dérive des données entre les données d'entraînement et les nouvelles données.
@@ -413,21 +415,21 @@ class EthicsGovernance:
             dict: Statistiques de dérive
         """
         drift_stats = {}
-        
+
         # Sélectionner uniquement les colonnes numériques
         numerical_cols = [col for col in X_train.columns if X_train[col].dtype in [np.int64, np.float64]]
-        
+
         for col in numerical_cols:
             # Calculer les statistiques de base
             train_mean = X_train[col].mean()
             train_std = X_train[col].std()
             new_mean = X_new[col].mean()
             new_std = X_new[col].std()
-            
+
             # Calculer les indicateurs de dérive
             mean_diff_pct = abs(train_mean - new_mean) / (abs(train_mean) if abs(train_mean) > 0 else 1)
             std_diff_pct = abs(train_std - new_std) / (abs(train_std) if abs(train_std) > 0 else 1)
-            
+
             drift_stats[col] = {
                 'train_mean': train_mean,
                 'train_std': train_std,
@@ -437,17 +439,17 @@ class EthicsGovernance:
                 'std_diff_pct': std_diff_pct,
                 'drift_detected': mean_diff_pct > 0.1 or std_diff_pct > 0.1  # Seuil arbitraire de 10%
             }
-        
+
         # Identifier les colonnes avec dérive significative
         drifted_columns = [col for col in drift_stats if drift_stats[col]['drift_detected']]
-        
+
         if drifted_columns:
             logger.warning(f"Dérive de données détectée dans {len(drifted_columns)} colonnes: {drifted_columns}")
         else:
             logger.info("Aucune dérive de données significative détectée")
-        
+
         return drift_stats
-    
+
     def generate_ethics_report(self, output_file="output/ethics/ethics_report.md"):
         """
         Génère un rapport sur les considérations éthiques et de gouvernance.
@@ -460,7 +462,7 @@ class EthicsGovernance:
         """
         # Créer le dossier de sortie s'il n'existe pas
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        
+
         # Contenu du rapport
         report_content = """# Rapport de Gouvernance Éthique
 
@@ -555,23 +557,23 @@ Le système comprend:
 
 Cette évaluation démontre notre engagement à développer un système d'IA éthique et responsable pour l'attribution des cas d'invalidité. Les mesures de protection, d'explicabilité et de surveillance mises en place visent à garantir que le système reste équitable, transparent et conforme aux exigences réglementaires tout au long de son cycle de vie.
 """
-        
+
         # Écrire le rapport dans un fichier
         with open(output_file, 'w') as f:
             f.write(report_content)
-        
+
         logger.info(f"Rapport de gouvernance éthique généré: {output_file}")
         return output_file
 
 
 def main(model=None, preprocessor=None, feature_names=None):
     """Fonction principale pour démontrer les fonctionnalités du module."""
-    
+
     try:
         # Simuler des données pour la démonstration
         np.random.seed(42)
         n_samples = 1000
-        
+
         # Créer un jeu de données synthétique
         X = pd.DataFrame({
             'Age': np.random.normal(45, 15, n_samples),
@@ -581,31 +583,31 @@ def main(model=None, preprocessor=None, feature_names=None):
             'FSA': np.random.choice(['M5V', 'H2X', 'T6E', 'V6C', 'K1P'], n_samples),
             'Age_Category': np.random.choice(['18-25', '26-40', '41-55', '56+'], n_samples)
         })
-        
+
         # Créer des prédictions synthétiques
         y_true = (X['Age'] > 40).astype(int)
         y_pred = ((X['Age'] > 40) & (np.random.random(n_samples) > 0.2)).astype(int)
-        
+
         # Initialiser le module d'éthique avec le modèle et le préprocesseur si disponibles
         ethics = EthicsGovernance(
-            model=model, 
-            preprocessor=preprocessor, 
+            model=model,
+            preprocessor=preprocessor,
             feature_names=feature_names,
             protected_attributes=['Sexe', 'Age_Category', 'FSA']
         )
-        
+
         # Démontrer les fonctionnalités
         anonymized_data = ethics.anonymize_data(X)
         print("Exemple de données anonymisées:")
         print(anonymized_data.head())
-        
+
         bias_stats = ethics.detect_bias(X, y_true, y_pred)
         print("\nStatistiques de biais détectées:")
         for attr, stats in bias_stats.items():
             print(f"  {attr}:")
             for group, metrics in stats.items():
                 print(f"    {group}: Exactitude = {metrics['accuracy']:.2f}")
-        
+
         # Tenter de générer les explications SHAP si le modèle est disponible
         if model is not None and feature_names is not None:
             try:
@@ -615,17 +617,17 @@ def main(model=None, preprocessor=None, feature_names=None):
                 print("Explications SHAP générées. Visualisations enregistrées dans output/ethics/")
             except Exception as e:
                 print(f"Erreur lors de la génération des explications SHAP: {str(e)}")
-        
+
         # Générer le rapport éthique
         report_path = ethics.generate_ethics_report()
         print(f"\nRapport éthique généré: {report_path}")
-        
+
         print("\nModule de gouvernance éthique testé avec succès!")
-        
+
     except Exception as e:
         logger.error(f"Erreur lors de l'exécution du module d'éthique: {str(e)}")
         print(f"Erreur: {str(e)}")
 
 
 if __name__ == "__main__":
-    main() 
+    main()

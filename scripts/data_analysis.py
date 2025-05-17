@@ -27,6 +27,8 @@ except:
 # Set plot style
 plt.style.use('seaborn-v0_8-whitegrid')
 sns.set_palette("Set2")
+plt.rcParams['font.family'] = 'DejaVu Sans'
+plt.rcParams['font.size'] = 14
 
 # Make sure the output directory exists
 os.makedirs('output', exist_ok=True)
@@ -88,7 +90,7 @@ def plot_correlation_quantitative(data, numerical_cols):
     cmap = sns.diverging_palette(230, 20, as_cmap=True)
 
     sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, vmin=-1, center=0,
-                square=True, linewidths=.5, annot=True, fmt=".2f", annot_kws={"size": 8})
+                square=True, linewidths=.5, annot=True, fmt=".2f", annot_kws={"size": 10})
 
     plt.title('Matrice de Corrélation - Variables Quantitatives', fontsize=16)
     plt.tight_layout()
@@ -146,7 +148,7 @@ def plot_correlation_qualitative(data, categorical_cols):
     cmap = sns.diverging_palette(230, 20, as_cmap=True)
 
     sns.heatmap(cramer_df, mask=mask, cmap=cmap, vmax=1, vmin=0, center=0.5,
-                square=True, linewidths=.5, annot=True, fmt=".2f", annot_kws={"size": 8})
+                square=True, linewidths=.5, annot=True, fmt=".2f", annot_kws={"size": 10})
 
     plt.title('Matrice de Corrélation (Cramer\'s V) - Variables Qualitatives', fontsize=16)
     plt.tight_layout()
@@ -181,7 +183,7 @@ def plot_correlation_all(data, target='Classe_Employe'):
     annot = len(corr.columns) <= 30
 
     sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, vmin=-1, center=0,
-                square=True, linewidths=.5, annot=annot, fmt=".2f", annot_kws={"size": 7})
+                square=True, linewidths=.5, annot=annot, fmt=".2f", annot_kws={"size": 10})
 
     plt.title('Matrice de Corrélation - Toutes Variables', fontsize=16)
     plt.xticks(rotation=45, ha='right')

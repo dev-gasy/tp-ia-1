@@ -107,15 +107,22 @@ def calculate_confusion_matrix(y_true, y_pred):
     for metric, value in metrics.items():
         print(f"{metric}: {value}")
 
+    # Ensure output directory exists
+    output_dir = os.environ.get('OUTPUT_DIR', 'output')
+    os.makedirs(output_dir, exist_ok=True)
+
     # Visualize confusion matrix
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=['Court (<= 180 jours)', 'Long (> 180 jours)'],
-                yticklabels=['Court (<= 180 jours)', 'Long (> 180 jours)'])
-    plt.xlabel('Prédiction')
-    plt.ylabel('Réalité')
-    plt.title('Matrice de Confusion')
-    plt.savefig('output/kpi_confusion_matrix.png')
+                yticklabels=['Court (<= 180 jours)', 'Long (> 180 jours)'],
+                annot_kws={"size": 12})
+    plt.xlabel('Prédiction', fontsize=12)
+    plt.ylabel('Réalité', fontsize=12)
+    plt.title('Matrice de Confusion', fontsize=14)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, 'kpi_confusion_matrix.png'), dpi=300, bbox_inches='tight')
+    plt.close()
 
     return metrics
 
@@ -142,6 +149,10 @@ def calculate_key_metrics(y_true, y_pred):
     for metric, value in metrics.items():
         print(f"{metric}: {value:.4f}")
 
+    # Ensure output directory exists
+    output_dir = os.environ.get('OUTPUT_DIR', 'output')
+    os.makedirs(output_dir, exist_ok=True)
+
     # Visualize metrics
     plt.figure(figsize=(10, 6))
     plt.bar(metrics.keys(), metrics.values())
@@ -150,7 +161,8 @@ def calculate_key_metrics(y_true, y_pred):
     plt.title('Métriques de Performance du Modèle')
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig('output/kpi_metrics.png')
+    plt.savefig(os.path.join(output_dir, 'kpi_metrics.png'))
+    plt.close()
 
     return metrics
 
@@ -193,153 +205,185 @@ def calculate_class_distribution(
     print(dist_df)
 
     # Ensure output directory exists
-    os.makedirs('output', exist_ok=True)
+    output_dir = os.environ.get('OUTPUT_DIR', 'output')
+    os.makedirs(output_dir, exist_ok=True)
 
     # Visualize distribution
     plt.figure(figsize=(10, 6))
     dist_df.plot(kind='bar')
+    plt.title('Distribution des Classes')
     plt.ylabel('Nombre de cas')
-    plt.title('Distribution des Classes: Réelle vs Prédite')
-    plt.legend(loc='best')
     plt.tight_layout()
-    plt.savefig('output/kpi_class_distribution.png')
+    plt.savefig(os.path.join(output_dir, 'class_distribution.png'))
+    plt.close()
 
-    # Calculate error rates by class
-    error_rates: Dict[str, float] = {}
-
-    # For short cases
-    short_indices = np.where(y_true == 0)[0]
-    if len(short_indices) > 0:
-        short_error_rate = sum(y_pred[short_indices] != y_true[short_indices]) / len(short_indices)
-        error_rates['Taux d\'erreur - Cas Courts'] = short_error_rate
-    else:
-        error_rates['Taux d\'erreur - Cas Courts'] = np.nan
-
-    # For long cases
-    long_indices = np.where(y_true == 1)[0]
-    if len(long_indices) > 0:
-        long_error_rate = sum(y_pred[long_indices] != y_true[long_indices]) / len(long_indices)
-        error_rates['Taux d\'erreur - Cas Longs'] = long_error_rate
-    else:
-        error_rates['Taux d\'erreur - Cas Longs'] = np.nan
-
-    # Overall error rate
-    error_rates['Taux d\'erreur global'] = sum(y_pred != y_true) / len(y_true)
+    # Calculate error rates
+    error_rates = {}
+    error_rates['Taux d\'erreur - Cas Courts'] = np.mean(
+        (y_true == 0) & (y_pred != 0))
+    error_rates['Taux d\'erreur - Cas Longs'] = np.mean(
+        (y_true == 1) & (y_pred != 1))
+    error_rates['Taux d\'erreur global'] = np.mean(y_true != y_pred)
 
     print("\nError Rates:")
-    for rate, value in error_rates.items():
-        print(f"{rate}: {value:.4f}")
+    for rate_name, rate_value in error_rates.items():
+        print(f"{rate_name}: {rate_value:.4f}")
 
     return dist_df, error_rates
 
 
 def calculate_business_impact(y_true, y_pred):
     """
-    Calculate business impact metrics relevant to the case attribution problem
+    Calculate business impact metrics
     """
-    # Calculate confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
-    tn, fp, fn, tp = cm.ravel()
+    # Create a classification dictionary for easier understanding
+    classification = {
+        'TP': np.sum((y_true == 1) & (y_pred == 1)),  # Cas longs correctement attribués
+        'FP': np.sum((y_true == 0) & (y_pred == 1)),  # Cas courts incorrectement attribués
+        'TN': np.sum((y_true == 0) & (y_pred == 0)),  # Cas courts correctement attribués
+        'FN': np.sum((y_true == 1) & (y_pred == 0))  # Cas longs incorrectement attribués
+    }
 
-    # Calculate business metrics
-    total = tn + fp + fn + tp
+    # Calculate overall correct attribution rate
+    total_cases = len(y_true)
+    correct_attribution = (classification['TP'] + classification['TN']) / total_cases
 
-    # Cases correctly assigned to appropriate employee type
-    correct_attribution = (tn + tp) / total
+    # Calculate business-specific metrics
+    short_to_exp = classification['FP'] / total_cases  # Cas courts attribués aux employés expérimentés
+    long_to_inexp = classification['FN'] / total_cases  # Cas longs attribués aux employés inexpérimentés
 
-    # Long cases incorrectly assigned to inexperienced employees (biggest business problem)
-    long_to_inexperienced = fn / (fn + tp) if (fn + tp) > 0 else 0
+    # Calculate efficiency metrics
+    junior_efficiency = classification['TN'] / (classification['TN'] + classification['FN']) if (classification['TN'] +
+                                                                                                 classification[
+                                                                                                     'FN']) > 0 else 0
+    senior_efficiency = classification['TP'] / (classification['TP'] + classification['FP']) if (classification['TP'] +
+                                                                                                 classification[
+                                                                                                     'FP']) > 0 else 0
 
-    # Short cases incorrectly assigned to experienced employees (resource waste)
-    short_to_experienced = fp / (tn + fp) if (tn + fp) > 0 else 0
-
-    # Store business metrics
-    business_metrics = {
-        'Taux d\'attribution correct': correct_attribution,
-        'Cas longs attribués aux employés inexpérimentés': long_to_inexperienced,
-        'Cas courts attribués aux employés expérimentés': short_to_experienced
+    # Store in dictionary
+    impact_metrics = {
+        'Taux d\'attribution correcte': correct_attribution,
+        'Cas longs attribués aux employés inexpérimentés': long_to_inexp,
+        'Cas courts attribués aux employés expérimentés': short_to_exp,
+        'Efficacité des employés juniors': junior_efficiency,
+        'Efficacité des employés seniors': senior_efficiency
     }
 
     print("\nBusiness Impact Metrics:")
-    for metric, value in business_metrics.items():
+    for metric, value in impact_metrics.items():
         print(f"{metric}: {value:.4f}")
 
-    # Ensure output directory exists
-    os.makedirs('output', exist_ok=True)
-
-    # Visualize business metrics
-    plt.figure(figsize=(10, 6))
-    plt.bar(business_metrics.keys(), business_metrics.values())
-    plt.ylim(0, 1)
-    plt.ylabel('Proportion')
-    plt.title('Métriques d\'Impact sur les Opérations')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig('output/kpi_business_impact.png')
-
-    # Compare with target KPIs from description
-    initial_target = 0.60  # 60% correct attribution in initial phase
-    improved_target = 0.80  # 80% correct attribution in improvement phase
+    # Compare with target KPIs
+    initial_target = 0.6  # 60% taux d'attribution correct
+    improved_target = 0.8  # 80% taux d'attribution correct
 
     print("\nComparison with Target KPIs:")
-    print(f"Initial Target (60%): {'Achieved' if correct_attribution >= initial_target else 'Not Achieved'}")
-    print(f"Improved Target (80%): {'Achieved' if correct_attribution >= improved_target else 'Not Achieved'}")
+    if correct_attribution >= initial_target:
+        print(f"Initial Target ({initial_target:.0%}): Achieved")
+    else:
+        print(f"Initial Target ({initial_target:.0%}): Not Achieved")
 
-    return business_metrics
+    if correct_attribution >= improved_target:
+        print(f"Improved Target ({improved_target:.0%}): Achieved")
+    else:
+        print(f"Improved Target ({improved_target:.0%}): Not Achieved")
+
+    # Ensure output directory exists
+    output_dir = os.environ.get('OUTPUT_DIR', 'output')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Create a simple visualization
+    plt.figure(figsize=(10, 6))
+    metrics_to_plot = {
+        'Taux d\'attribution correcte': correct_attribution,
+        'Objectif initial (60%)': initial_target,
+        'Objectif amélioré (80%)': improved_target
+    }
+    plt.bar(metrics_to_plot.keys(), metrics_to_plot.values())
+    plt.title('Comparaison des KPIs d\'affaires')
+    plt.ylabel('Taux (%)')
+    plt.ylim(0, 1)
+    plt.axhline(y=initial_target, color='r', linestyle='-', label='Target')
+    plt.axhline(y=improved_target, color='g', linestyle='--', label='Improved Target')
+    plt.savefig(os.path.join(output_dir, 'business_impact.png'))
+    plt.close()
+
+    return impact_metrics
 
 
 def generate_roc_curve(y_true, y_pred_proba):
     """
-    Generate and visualize ROC curve
+    Generate and save ROC curve visualization
     """
     # Calculate ROC curve
     fpr, tpr, thresholds = roc_curve(y_true, y_pred_proba)
     roc_auc = auc(fpr, tpr)
 
+    # Ensure output directory exists
+    output_dir = os.environ.get('OUTPUT_DIR', 'output')
+    os.makedirs(output_dir, exist_ok=True)
+
     # Plot ROC curve
     plt.figure(figsize=(10, 8))
-    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+    plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('Taux de Faux Positifs')
-    plt.ylabel('Taux de Vrais Positifs')
-    plt.title('Courbe ROC (Receiver Operating Characteristic)')
-    plt.legend(loc="lower right")
-    plt.savefig('output/kpi_roc_curve.png')
+    plt.xlabel('Taux de faux positifs')
+    plt.ylabel('Taux de vrais positifs')
+    plt.title('Courbe ROC')
+    plt.legend(loc='lower right')
+    plt.savefig(os.path.join(output_dir, 'roc_curve.png'))
+    plt.close()
 
     return roc_auc
 
 
 def generate_summary_report(metrics_dict: List[Dict[str, Any]]) -> pd.DataFrame:
     """
-    Generate a summary report with all metrics
+    Generate a summary report of all model performance
     
     Args:
-        metrics_dict: List of dictionaries with metrics
+        metrics_dict: List of dictionaries containing model metrics
         
     Returns:
-        DataFrame with summary report
+        DataFrame with model comparison
     """
-    # Ensure output directory exists
-    os.makedirs('output', exist_ok=True)
-
-    # Combine all metrics
-    summary: Dict[str, Any] = {}
-    for d in metrics_dict:
-        summary.update(d)
-
-    # Create a DataFrame
-    summary_df = pd.DataFrame.from_dict(summary, orient='index', columns=['Value'])
-
     print("\nSummary report generated")
 
-    return summary_df
+    # Handle empty list or None
+    if not metrics_dict:
+        print("Warning: No metrics provided for summary report")
+        return pd.DataFrame()
+
+    # Convert list of dictionaries to DataFrame
+    df = pd.DataFrame(metrics_dict)
+
+    # Rename columns for consistency
+    column_mapping = {
+        'model_name': 'Modèle',
+        'accuracy': 'Exactitude',
+        'precision': 'Précision',
+        'recall': 'Rappel',
+        'f1_score': 'Score F1',
+        'f1': 'Score F1',  # Handle both f1 and f1_score
+        'training_time': 'Temps d\'entraînement (s)',
+        'inference_time': 'Temps d\'inférence (s)'
+    }
+
+    # Rename only columns that exist
+    rename_cols = {k: v for k, v in column_mapping.items() if k in df.columns}
+    if rename_cols:
+        df = df.rename(columns=rename_cols)
+
+    print(f"Generated summary report with {len(df.columns)} metrics")
+
+    return df
 
 
 def generate_formatted_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray) -> pd.DataFrame:
     """
-    Generate a formatted confusion matrix as specified in the project requirements
+    Generate a formatted confusion matrix as a DataFrame
     
     Args:
         y_true: True labels
@@ -350,52 +394,54 @@ def generate_formatted_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray) 
     """
     # Calculate confusion matrix
     cm = confusion_matrix(y_true, y_pred)
-    tn, fp, fn, tp = cm.ravel()
 
-    # Create formatted dataframe
-    confusion_df = pd.DataFrame([
-        ["Vrais-Positifs", "Cas longs prédits longs", tp],
-        ["Faux-Négatifs", "Cas longs prédits courts", fn],
-        ["Vrais-Négatifs", "Cas courts prédits courts", tn],
-        ["Faux-Positifs", "Cas courts prédits longs", fp]
-    ], columns=["Type de prédiction", "Description", "Valeur"])
+    # Create labeled confusion matrix as DataFrame
+    row_labels = ['Réalité: Cas Courts (≤ 180 jours)', 'Réalité: Cas Longs (> 180 jours)']
+    col_labels = ['Prédiction: Cas Courts (≤ 180 jours)', 'Prédiction: Cas Longs (> 180 jours)']
 
-    # Ensure output directory exists
-    os.makedirs('output', exist_ok=True)
+    # Handle case where confusion matrix isn't 2x2
+    if cm.shape != (2, 2):
+        print(f"Warning: Confusion matrix has shape {cm.shape}, expected (2, 2)")
+        # Pad or truncate the confusion matrix to 2x2
+        cm_2x2 = np.zeros((2, 2))
+        rows = min(cm.shape[0], 2)
+        cols = min(cm.shape[1], 2)
+        cm_2x2[:rows, :cols] = cm[:rows, :cols]
+        cm = cm_2x2
 
-    # Generate a visual table
-    plt.figure(figsize=(10, 6))
-    ax = plt.subplot(111, frame_on=False)
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
+    cm_df = pd.DataFrame(cm, index=row_labels, columns=col_labels)
 
-    table = plt.table(cellText=confusion_df.values,
-                      colLabels=confusion_df.columns,
-                      cellLoc='center',
-                      loc='center')
-    table.auto_set_font_size(False)
-    table.set_fontsize(12)
-    table.scale(1.2, 1.5)
-
-    plt.title('Matrice de Confusion - Détails')
-    plt.tight_layout()
-    plt.savefig('output/confusion_matrix_table.png')
+    # Add row and column headings
+    cm_df.index.name = 'Réel'
+    cm_df.columns.name = 'Prédit'
 
     print("Formatted confusion matrix generated and saved to 'output/confusion_matrix_table.png'")
 
-    return confusion_df
+    # Ensure output directory exists
+    output_dir = os.environ.get('OUTPUT_DIR', 'output')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Visualize the formatted confusion matrix
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues',
+                annot_kws={"size": 12})
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, 'confusion_matrix_table.png'), dpi=300, bbox_inches='tight')
+    plt.close()
+
+    return cm_df
 
 
 def generate_performance_metrics_table(y_true: np.ndarray, y_pred: np.ndarray) -> pd.DataFrame:
     """
-    Generate a performance metrics table as specified in the project requirements
+    Generate a formatted table of performance metrics
     
     Args:
         y_true: True labels
         y_pred: Predicted labels
         
     Returns:
-        DataFrame with performance metrics
+        DataFrame with formatted metrics table
     """
     # Calculate metrics
     accuracy = accuracy_score(y_true, y_pred)
@@ -405,26 +451,23 @@ def generate_performance_metrics_table(y_true: np.ndarray, y_pred: np.ndarray) -
 
     # Create metrics dataframe
     metrics_df = pd.DataFrame([
-        ["Exactitude globale", accuracy],
-        ["Précision", precision],
-        ["Rappel", recall],
-        ["Score F1", f1]
-    ], columns=["Métrique", "Valeur"])
+        ["Exactitude (Accuracy)", accuracy, "Proportion de prédictions correctes"],
+        ["Précision (Precision)", precision, "Proportion de cas longs prédits qui sont réellement longs"],
+        ["Rappel (Recall)", recall, "Proportion de cas longs réels qui sont correctement prédits"],
+        ["Score F1", f1, "Moyenne harmonique de la précision et du rappel"]
+    ], columns=["Métrique", "Valeur", "Description"])
 
     # Ensure output directory exists
-    os.makedirs('output', exist_ok=True)
+    output_dir = os.environ.get('OUTPUT_DIR', 'output')
+    os.makedirs(output_dir, exist_ok=True)
 
     # Generate a visual table
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6))
     ax = plt.subplot(111, frame_on=False)
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
 
-    # Create table with formatted values
-    cell_text = metrics_df.copy()
-    cell_text["Valeur"] = cell_text["Valeur"].apply(lambda x: f"{x:.4f}")
-
-    table = plt.table(cellText=cell_text.values,
+    table = plt.table(cellText=metrics_df.values,
                       colLabels=metrics_df.columns,
                       cellLoc='center',
                       loc='center')
@@ -432,9 +475,10 @@ def generate_performance_metrics_table(y_true: np.ndarray, y_pred: np.ndarray) -
     table.set_fontsize(12)
     table.scale(1.2, 1.5)
 
-    plt.title('Métriques de Performance')
+    plt.title('Métriques de performance', fontsize=14)
     plt.tight_layout()
-    plt.savefig('output/performance_metrics_table.png')
+    plt.savefig(os.path.join(output_dir, 'performance_metrics_table.png'), dpi=300, bbox_inches='tight')
+    plt.close()
 
     print("Performance metrics table generated and saved to 'output/performance_metrics_table.png'")
 
@@ -466,29 +510,41 @@ def main() -> Optional[pd.DataFrame]:
         for directory in ['output']:
             os.makedirs(directory, exist_ok=True)
 
-        # Import utility functions for creating categorical features
-        from scripts.utils import create_age_categories, create_salary_categories, create_seasonal_features
-
-        # Extract the trained pre-processor from the model
-        # This is likely to be more reliable than trying to recreate the preprocessing
+        # Try to import utility functions but don't fail if they're not available
         try:
-            preprocessor = model.named_steps['preprocessor']
-            print("Successfully extracted preprocessor from model pipeline")
-        except:
-            print("Could not extract preprocessor from model, using default preprocessing")
-            preprocessor = None
+            from scripts.utils import create_age_categories, create_salary_categories, create_seasonal_features
+            has_utils = True
+        except (ImportError, LookupError):
+            print("Warning: Could not import utility functions. Using basic processing.")
+            has_utils = False
 
-        # First, ensure all required columns exist using utility functions
+        # First, ensure all required columns exist
         required_columns = ['Age_Category', 'Salary_Category', 'Sexe', 'Is_Winter', 'Is_Summer', 'Code_Emploi']
         for col in required_columns:
             if col not in X.columns:
                 print(f"Adding missing column: {col}")
-                if col == 'Age_Category' and 'Age' in X.columns:
+                if col == 'Age_Category' and 'Age' in X.columns and has_utils:
                     X = create_age_categories(X)
-                elif col == 'Salary_Category' and 'Salaire_Annuel' in X.columns:
+                elif col == 'Salary_Category' and 'Salaire_Annuel' in X.columns and has_utils:
                     X = create_salary_categories(X)
-                elif col in ['Is_Winter', 'Is_Summer'] and 'Mois_Debut_Invalidite' in X.columns:
+                elif col in ['Is_Winter', 'Is_Summer'] and 'Mois_Debut_Invalidite' in X.columns and has_utils:
                     X = create_seasonal_features(X)
+                elif col == 'Age_Category' and 'Age' in X.columns:
+                    # Fallback implementation if utils are not available
+                    bins = [0, 25, 35, 45, 55, 65, 100]
+                    labels = ['25 or younger', '26-35', '36-45', '46-55', '56-65', '66+']
+                    X[col] = pd.cut(X['Age'], bins=bins, labels=labels, right=False)
+                elif col == 'Salary_Category' and 'Salaire_Annuel' in X.columns:
+                    # Fallback implementation if utils are not available
+                    salary_bins = [0, 20000, 40000, 60000, 100000, float('inf')]
+                    salary_labels = ['Very Low', 'Low', 'Medium', 'High', 'Very High']
+                    X[col] = pd.cut(X['Salaire_Annuel'], bins=salary_bins, labels=salary_labels)
+                elif col in ['Is_Winter', 'Is_Summer'] and 'Mois_Debut_Invalidite' in X.columns:
+                    # Fallback implementation if utils are not available
+                    if col == 'Is_Winter':
+                        X[col] = ((X['Mois_Debut_Invalidite'] >= 12) | (X['Mois_Debut_Invalidite'] <= 2)).astype(int)
+                    else:  # Is_Summer
+                        X[col] = ((X['Mois_Debut_Invalidite'] >= 6) & (X['Mois_Debut_Invalidite'] <= 8)).astype(int)
                 elif col == 'Sexe':
                     X['Sexe'] = 'M'  # Default value
                 elif col == 'Code_Emploi':
@@ -496,36 +552,40 @@ def main() -> Optional[pd.DataFrame]:
 
         print(f"X columns after adding required columns: {X.columns.tolist()}")
 
-        # Instead of trying to re-create the preprocessing pipeline, let's create synthetic data 
-        # and train a new model with the same data
-        print("Generating new model with processed data...")
-
-        # Re-run data generation and model training
-        import subprocess
-        subprocess.run(["python", "generate_demo_data.py"], check=True)
-
-        # Reload the model
-        with open('models/best_model.pkl', 'rb') as f:
-            model = pickle.load(f)
-            print("Reloaded model successfully from models/best_model.pkl")
-
-        # Process data through the new model's preprocessor
-        X_processed = pd.get_dummies(X, drop_first=True)
-
-        # Try prediction with the new model
+        # Generate new demo data and model only if needed (if preprocessing fails)
         try:
+            # Process data through get_dummies
+            X_processed = pd.get_dummies(X, drop_first=True)
             y_pred = model.predict(X_processed)
             y_pred_proba = model.predict_proba(X_processed)[:, 1]
-            print("Prediction successful with new model.")
+            print("Successfully used existing model for prediction.")
         except Exception as e:
-            print(f"Error in prediction even with new model: {str(e)}")
+            print(f"Error using existing model: {str(e)}")
+            print("Generating new model with processed data...")
 
-            # Fall back to random predictions if all else fails
-            import numpy as np
-            print("Falling back to random predictions for demonstration purposes")
-            y_pred = np.random.randint(0, 2, size=len(y))
-            y_pred_proba = np.random.random(size=len(y))
-            print("Generated random predictions as fallback")
+            # Re-run data generation - but make it optional
+            try:
+                import subprocess
+                subprocess.run(["python", "generate_demo_data.py"], check=True)
+
+                # Reload the model
+                with open('models/best_model.pkl', 'rb') as f:
+                    model = pickle.load(f)
+                    print("Reloaded model successfully from models/best_model.pkl")
+
+                # Process data through the new model's preprocessor
+                X_processed = pd.get_dummies(X, drop_first=True)
+                y_pred = model.predict(X_processed)
+                y_pred_proba = model.predict_proba(X_processed)[:, 1]
+                print("Prediction successful with new model.")
+            except Exception as sub_e:
+                print(f"Error regenerating model: {str(sub_e)}")
+
+                # Fall back to random predictions if all else fails
+                print("Falling back to random predictions for demonstration purposes")
+                y_pred = np.random.randint(0, 2, size=len(y))
+                y_pred_proba = np.random.random(size=len(y))
+                print("Generated random predictions as fallback")
 
         # Calculate confusion matrix
         cm_metrics = calculate_confusion_matrix(y, y_pred)
@@ -550,12 +610,18 @@ def main() -> Optional[pd.DataFrame]:
             plt.savefig('output/kpi_roc_curve.png')
 
         # Generate summary report
-        metrics_list = [
-            cm_metrics,
-            key_metrics,
-            error_rates,
-            business_metrics
-        ]
+        metrics_list = []
+
+        # Only add metrics dictionaries, not other return types
+        if isinstance(cm_metrics, dict):
+            metrics_list.append(cm_metrics)
+        if isinstance(key_metrics, dict):
+            metrics_list.append(key_metrics)
+        if isinstance(error_rates, dict):
+            metrics_list.append(error_rates)
+        if isinstance(business_metrics, dict):
+            metrics_list.append(business_metrics)
+
         if roc_auc:
             metrics_list.append({'ROC AUC': roc_auc})
 

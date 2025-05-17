@@ -1,6 +1,7 @@
 # Système de Prédiction de Durée d'Invalidité
 
-Ce projet implémente un système de prédiction de la durée des cas d'invalidité pour optimiser l'attribution des dossiers aux employés selon leur niveau d'expérience.
+Ce projet implémente un système de prédiction de la durée des cas d'invalidité pour optimiser l'attribution des dossiers
+aux employés selon leur niveau d'expérience.
 
 ## Objectif
 
@@ -72,6 +73,7 @@ Le système est composé de plusieurs composants organisés dans une architectur
 - Docker Compose
 - Python 3.9 ou supérieur
 - Pandoc (pour la génération de documents Word)
+- Pytest (pour les tests)
 
 ### Installation avec Docker
 
@@ -97,9 +99,9 @@ Le script va:
 - Construire et démarrer les conteneurs Docker
 
 3. Accéder à l'application:
-   - Frontend: http://localhost
-   - Backend API: http://localhost:8000
-   - Documentation API: http://localhost:8000/docs
+    - Frontend: http://localhost
+    - Backend API: http://localhost:8000
+    - Documentation API: http://localhost:8000/docs
 
 ### Installation manuelle (pour développement)
 
@@ -197,7 +199,8 @@ Le système atteint les performances suivantes avec le modèle Random Forest:
 - **Score F1** : 99.7%
 - **AUC** : 100.0%
 
-Ces performances dépassent largement les objectifs initiaux de 60% et les objectifs améliorés de 80% d'attributions correctes.
+Ces performances dépassent largement les objectifs initiaux de 60% et les objectifs améliorés de 80% d'attributions
+correctes.
 
 ## Documentation Générée
 
@@ -205,8 +208,10 @@ Ces performances dépassent largement les objectifs initiaux de 60% et les objec
 
 Deux documents Word complets ont été générés pour une utilisation professionnelle:
 
-- **Description Méthodologique** (`description_document.docx`): Document détaillant le contexte d'affaires, les objectifs et la méthodologie
-- **Rapport Technique** (`technical_report_final.docx`): Rapport complet avec toutes les visualisations, analyses de performances et résultats techniques
+- **Description Méthodologique** (`description_document.docx`): Document détaillant le contexte d'affaires, les
+  objectifs et la méthodologie
+- **Rapport Technique** (`technical_report_final.docx`): Rapport complet avec toutes les visualisations, analyses de
+  performances et résultats techniques
 
 Pour regénérer ces documents à partir des fichiers Markdown:
 

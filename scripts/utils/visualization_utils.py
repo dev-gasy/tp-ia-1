@@ -6,7 +6,7 @@ Visualization utility functions for the Insurance Claim Duration Prediction proj
 """
 
 import os
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,29 +37,30 @@ def plot_confusion_matrix(
     """
     # Make sure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Compute confusion matrix
     cm = confusion_matrix(y_true, y_pred)
-    
+
     # Create a safe filename
     safe_name = model_name.lower().replace(' ', '_')
-    
+
     # Plot confusion matrix
     plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                xticklabels=classes, yticklabels=classes)
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title(f'Confusion Matrix - {model_name}')
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=classes, yticklabels=classes,
+                annot_kws={"size": 12})
+    plt.xlabel('Predicted', fontsize=12)
+    plt.ylabel('True', fontsize=12)
+    plt.title(f'Confusion Matrix - {model_name}', fontsize=14)
     plt.tight_layout()
-    
+
     # Save the plot
     output_path = os.path.join(output_dir, f'confusion_matrix_{safe_name}.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
     print(f"Confusion matrix saved to {output_path}")
-    
+
     # Extract metrics from confusion matrix
     if cm.shape == (2, 2):
         tn, fp, fn, tp = cm.ravel()
@@ -94,14 +95,14 @@ def plot_roc_curve(
     """
     # Make sure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Create a safe filename
     safe_name = model_name.lower().replace(' ', '_')
-    
+
     # Compute ROC curve and AUC
     fpr, tpr, _ = roc_curve(y_true, y_proba)
     roc_auc = auc(fpr, tpr)
-    
+
     # Plot ROC curve
     plt.figure(figsize=(8, 6))
     plt.plot(fpr, tpr, lw=2, label=f'ROC curve (AUC = {roc_auc:.3f})')
@@ -114,14 +115,14 @@ def plot_roc_curve(
     plt.legend(loc='lower right')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    
+
     # Save the plot
     output_path = os.path.join(output_dir, f'roc_curve_{safe_name}.png')
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
     print(f"ROC curve saved to {output_path}")
-    
+
     return roc_auc
 
 
@@ -144,31 +145,32 @@ def plot_correlation_matrix(
     """
     # Make sure the output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
+
     # Compute correlation matrix
     corr = data.corr()
-    
+
     # Create mask for the upper triangle
     mask = np.zeros_like(corr, dtype=bool) if not mask_upper else np.triu(np.ones_like(corr, dtype=bool))
-    
+
     # Create figure
     plt.figure(figsize=figsize)
-    
+
     # Plot heatmap
     sns.heatmap(
         corr, mask=mask, annot=True, fmt='.2f',
         cmap='coolwarm', center=0, linewidths=0.5,
-        cbar_kws={'shrink': 0.8}
+        cbar_kws={'shrink': 0.8},
+        annot_kws={"size": 10}  # Set font size for annotations
     )
-    
+
     # Add title and adjust layout
     plt.title(title, fontsize=16)
     plt.tight_layout()
-    
+
     # Save the plot
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
     print(f"Correlation matrix saved to {output_path}")
 
 
@@ -191,44 +193,44 @@ def plot_radar_chart(
     """
     # Make sure the output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
+
     # Number of variables
     N = len(categories)
-    
+
     # Set up the angles for each category
-    angles = np.linspace(0, 2*np.pi, N, endpoint=False).tolist()
-    
+    angles = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
+
     # Make it a full circle by repeating the first angle
     angles += angles[:1]
-    
+
     # Create figure
     fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(polar=True))
-    
+
     # Colors for each model
     colors = plt.cm.tab10(np.linspace(0, 1, len(metrics_data)))
-    
+
     # Plot each model
     for i, (model_name, metric_values) in enumerate(metrics_data.items()):
         # Make sure the values form a complete circle
         values = metric_values.copy()
         values += values[:1]
-        
+
         # Plot the model metrics
         ax.plot(angles, values, 'o-', linewidth=2, label=model_name, color=colors[i])
         ax.fill(angles, values, alpha=0.1, color=colors[i])
-    
+
     # Set category labels
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(categories, fontsize=12)
-    
+
     # Add legend, title and adjust layout
     plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
     plt.title(title, size=16, pad=20)
-    
+
     # Save the plot
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
     print(f"Radar chart saved to {output_path}")
 
 
@@ -253,33 +255,33 @@ def plot_metrics_comparison(
     """
     # Make sure the output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
+
     # Create figure
     plt.figure(figsize=figsize)
-    
+
     # Plot grouped bar chart
     metrics_df.plot(
         x=x_col, y=metrics_cols, kind='bar',
         ax=plt.gca(), rot=0, width=0.8
     )
-    
+
     # Add title and labels
     plt.title(title, fontsize=16)
     plt.xlabel('')
     plt.ylabel('Score', fontsize=12)
     plt.ylim(0, 1.1)
-    
+
     # Add grid
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    
+
     # Add legend and adjust layout
     plt.legend(title='Metrics', fontsize=10)
     plt.tight_layout()
-    
+
     # Save the plot
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
     print(f"Metrics comparison chart saved to {output_path}")
 
 
@@ -300,13 +302,13 @@ def plot_roc_comparison(
     """
     # Make sure the output directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
+
     # Create figure
     plt.figure(figsize=figsize)
-    
+
     # Colors for each model
     colors = plt.cm.tab10(np.linspace(0, 1, len(roc_data)))
-    
+
     # Plot each ROC curve
     for i, (model_name, (fpr, tpr, roc_auc)) in enumerate(roc_data.items()):
         plt.plot(
@@ -314,30 +316,30 @@ def plot_roc_comparison(
             label=f'{model_name} (AUC = {roc_auc:.3f})',
             color=colors[i]
         )
-    
+
     # Add diagonal reference line
     plt.plot([0, 1], [0, 1], 'k--', lw=1)
-    
+
     # Set axis limits
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    
+
     # Add labels and title
     plt.xlabel('False Positive Rate', fontsize=12)
     plt.ylabel('True Positive Rate', fontsize=12)
     plt.title(title, fontsize=16)
-    
+
     # Add grid and legend
     plt.grid(True, alpha=0.3)
     plt.legend(loc='lower right')
-    
+
     # Adjust layout
     plt.tight_layout()
-    
+
     # Save the plot
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
     print(f"ROC comparison chart saved to {output_path}")
 
 
@@ -348,4 +350,4 @@ def set_visualization_style() -> None:
     plt.rcParams['font.family'] = 'DejaVu Sans'
     plt.rcParams['axes.unicode_minus'] = False
     plt.rcParams['figure.figsize'] = (10, 6)
-    plt.rcParams['font.size'] = 12 
+    plt.rcParams['font.size'] = 14  # Increase the default font size

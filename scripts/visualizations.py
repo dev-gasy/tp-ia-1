@@ -7,11 +7,11 @@ This module generates all visualizations needed for reports and analysis.
 """
 
 import os
-from typing import Dict, List, Optional, Tuple, Union
 
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import roc_curve, auc
+import pandas as pd
+import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
 
 from scripts.utils.visualization_utils import (
@@ -23,8 +23,8 @@ from scripts.utils.visualization_utils import (
 )
 
 
-def generate_correlation_matrices(data_path: str = 'data/processed_data.csv', 
-                                output_dir: str = 'output') -> None:
+def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
+                                  output_dir: str = 'output') -> None:
     """
     Generate all correlation matrix visualizations.
     
@@ -33,7 +33,7 @@ def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
         output_dir: Directory to save visualization outputs
     """
     print("Generating correlation matrices...")
-    
+
     # Load the data
     try:
         df = pd.read_csv(data_path)
@@ -44,7 +44,7 @@ def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
         print("Creating synthetic data for demonstration...")
         np.random.seed(42)
         n_samples = 100
-        
+
         df = pd.DataFrame({
             'Age': np.random.normal(40, 10, n_samples).astype(int),
             'Salary': np.random.normal(45000, 15000, n_samples).astype(int),
@@ -53,15 +53,15 @@ def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
             'Category': np.random.choice(['A', 'B', 'C'], n_samples),
             'Score': np.random.random(n_samples) * 100
         })
-    
+
     # Make sure output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Clean the data - remove problematic columns and missing values
     # Keep only numeric columns for the main correlation matrix
     numeric_df = df.select_dtypes(include=['int64', 'float64'])
     numeric_df = numeric_df.dropna(axis=1, how='all')  # Drop columns with all NaN
-    
+
     # 1. Generate correlation matrix for numeric variables
     if not numeric_df.empty:
         try:
@@ -73,22 +73,22 @@ def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
             print("Quantitative correlation matrix generated.")
         except Exception as e:
             print(f"Error generating quantitative correlation matrix: {str(e)}")
-    
+
     # 2. Generate correlation matrix for categorical variables
     # Identify categorical columns
     cat_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
-    
+
     if cat_cols:
         try:
             # Create a copy for encoding
             cat_df = df[cat_cols].copy()
-            
+
             # Encode categorical columns
             for col in cat_cols:
                 try:
                     # Handle missing values
                     cat_df[col] = cat_df[col].fillna('Unknown')
-                    
+
                     # Encode with LabelEncoder
                     le = LabelEncoder()
                     cat_df[col] = le.fit_transform(cat_df[col].astype(str))
@@ -96,7 +96,7 @@ def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
                     print(f"Warning: Couldn't encode column {col}: {str(col_error)}")
                     # Remove problematic column
                     cat_df = cat_df.drop(columns=[col])
-            
+
             if not cat_df.empty:
                 plot_correlation_matrix(
                     data=cat_df,
@@ -106,30 +106,30 @@ def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
                 print("Categorical correlation matrix generated.")
         except Exception as e:
             print(f"Error generating categorical correlation matrix: {str(e)}")
-    
+
     # 3. Try to generate an overall correlation matrix with both types
     try:
         # Create a copy for combined encoding
         combined_df = df.copy()
-        
+
         # Handle categorical columns
         for col in cat_cols:
             try:
                 # Handle missing values
                 combined_df[col] = combined_df[col].fillna('Unknown')
-                
+
                 # Encode with LabelEncoder
                 le = LabelEncoder()
                 combined_df[col] = le.fit_transform(combined_df[col].astype(str))
             except Exception:
                 # Remove problematic column
                 combined_df = combined_df.drop(columns=[col])
-        
+
         # Handle numeric columns - ensure no NaN
         for col in numeric_df.columns:
             if col in combined_df:
                 combined_df[col] = combined_df[col].fillna(combined_df[col].median())
-        
+
         # Generate correlation matrix for all variables
         if not combined_df.empty:
             plot_correlation_matrix(
@@ -140,12 +140,12 @@ def generate_correlation_matrices(data_path: str = 'data/processed_data.csv',
             print("Overall correlation matrix generated.")
     except Exception as e:
         print(f"Error generating overall correlation matrix: {str(e)}")
-    
+
     print("Correlation matrices generation completed.")
 
 
 def generate_model_comparison_visualizations(metrics_path: str = 'output/model_metrics.csv',
-                                           output_dir: str = 'output') -> None:
+                                             output_dir: str = 'output') -> None:
     """
     Generate model comparison visualizations.
     
@@ -154,10 +154,10 @@ def generate_model_comparison_visualizations(metrics_path: str = 'output/model_m
         output_dir: Directory to save visualization outputs
     """
     print("Generating model comparison visualizations...")
-    
+
     # Make sure output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Check if metrics file exists
     if not os.path.exists(metrics_path):
         # Generate synthetic data for demonstration
@@ -188,7 +188,7 @@ def generate_model_comparison_visualizations(metrics_path: str = 'output/model_m
                 'AUC': [0.947, 0.991, 1.000, 0.954],
                 'Training Time': [0.004, 0.004, 0.068, 0.037]
             })
-    
+
     # 1. Generate metrics comparison bar chart
     try:
         plot_metrics_comparison(
@@ -201,16 +201,16 @@ def generate_model_comparison_visualizations(metrics_path: str = 'output/model_m
         print("Metrics comparison chart generated.")
     except Exception as e:
         print(f"Error generating metrics comparison chart: {str(e)}")
-    
+
     # 2. Generate radar chart
     try:
         metrics_data = {
             row['Model']: [row['Accuracy'], row['Precision'], row['Recall'], row['F1']]
             for _, row in metrics_df.iterrows()
         }
-        
+
         categories = ['Accuracy', 'Precision', 'Recall', 'F1']
-        
+
         plot_radar_chart(
             metrics_data=metrics_data,
             categories=categories,
@@ -220,7 +220,7 @@ def generate_model_comparison_visualizations(metrics_path: str = 'output/model_m
         print("Radar chart generated.")
     except Exception as e:
         print(f"Error generating radar chart: {str(e)}")
-    
+
     # 3. Generate ROC comparison chart
     try:
         # We need to simulate ROC curves since we only have AUC values
@@ -228,7 +228,7 @@ def generate_model_comparison_visualizations(metrics_path: str = 'output/model_m
         for _, row in metrics_df.iterrows():
             model_name = row['Model']
             auc_value = row['AUC']
-            
+
             # Simulate ROC curve based on AUC
             fpr = np.linspace(0, 1, 100)
             if auc_value > 0.99:
@@ -237,10 +237,10 @@ def generate_model_comparison_visualizations(metrics_path: str = 'output/model_m
                 tpr[:3] = np.linspace(0, 1, 3)
             else:
                 # Use a function that approximates the desired AUC
-                tpr = fpr**(1.0/(10*auc_value))
-            
+                tpr = fpr ** (1.0 / (10 * auc_value))
+
             roc_data[model_name] = (fpr, tpr, auc_value)
-        
+
         plot_roc_comparison(
             roc_data=roc_data,
             title='ROC Curve Comparison',
@@ -249,13 +249,13 @@ def generate_model_comparison_visualizations(metrics_path: str = 'output/model_m
         print("ROC comparison chart generated.")
     except Exception as e:
         print(f"Error generating ROC comparison chart: {str(e)}")
-    
+
     print("Model comparison visualizations generation completed.")
 
 
 def generate_all_visualizations(data_path: str = 'data/processed_data.csv',
-                              metrics_path: str = 'output/model_metrics.csv',
-                              output_dir: str = 'output') -> None:
+                                metrics_path: str = 'output/model_metrics.csv',
+                                output_dir: str = 'output') -> None:
     """
     Generate all visualizations for the project.
     
@@ -265,18 +265,18 @@ def generate_all_visualizations(data_path: str = 'data/processed_data.csv',
         output_dir: Directory to save visualization outputs
     """
     print(f"Starting visualization generation in '{output_dir}'")
-    
+
     # Set global visualization style
     set_visualization_style()
-    
+
     # Make sure output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
+
     try:
         # Generate all visualization types
         generate_correlation_matrices(data_path, output_dir)
         generate_model_comparison_visualizations(metrics_path, output_dir)
-        
+
         print(f"All visualizations generated successfully in {output_dir}.")
         return True
     except Exception as e:
@@ -284,5 +284,22 @@ def generate_all_visualizations(data_path: str = 'data/processed_data.csv',
         return False
 
 
+def set_visualization_style() -> None:
+    """Set global visualization style for consistent plots."""
+    sns.set_style('whitegrid')
+    plt.rcParams['font.family'] = 'DejaVu Sans'
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.rcParams['figure.figsize'] = (10, 6)
+    plt.rcParams['font.size'] = 14  # Increased font size
+
+    # Set additional parameters for better readability
+    plt.rcParams['axes.titlesize'] = 16
+    plt.rcParams['axes.labelsize'] = 12
+    plt.rcParams['xtick.labelsize'] = 10
+    plt.rcParams['ytick.labelsize'] = 10
+    plt.rcParams['legend.fontsize'] = 12
+    plt.rcParams['legend.title_fontsize'] = 14
+
+
 if __name__ == "__main__":
-    generate_all_visualizations() 
+    generate_all_visualizations()

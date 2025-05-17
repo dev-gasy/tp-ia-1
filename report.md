@@ -2,7 +2,9 @@
 
 ## Résumé technique
 
-Ce document présente les aspects techniques et les résultats du système de prédiction de durée d'invalidité. Le projet implémente un modèle de classification qui distingue les cas d'invalidité courts (≤ 180 jours) des cas longs (> 180 jours) afin d'optimiser leur attribution aux employés selon leur niveau d'expérience.
+Ce document présente les aspects techniques et les résultats du système de prédiction de durée d'invalidité. Le projet
+implémente un modèle de classification qui distingue les cas d'invalidité courts (≤ 180 jours) des cas longs (> 180
+jours) afin d'optimiser leur attribution aux employés selon leur niveau d'expérience.
 
 ## 1. Technologies et architecture
 
@@ -81,32 +83,32 @@ Les facteurs les plus corrélés avec la classe d'employé sont:
 
 - **Nettoyage**:
 
-  - Suppression des valeurs manquantes (<1% des données)
-  - Détection et traitement des valeurs aberrantes (méthode IQR)
-  - Normalisation des encodages UTF-8
+    - Suppression des valeurs manquantes (<1% des données)
+    - Détection et traitement des valeurs aberrantes (méthode IQR)
+    - Normalisation des encodages UTF-8
 
 - **Transformations**:
 
-  - Normalisation (StandardScaler) des variables numériques
-  - Encodage one-hot des variables catégorielles
-  - Extraction d'âge à partir de l'année de naissance
+    - Normalisation (StandardScaler) des variables numériques
+    - Encodage one-hot des variables catégorielles
+    - Extraction d'âge à partir de l'année de naissance
 
 - **Enrichissement**:
-  - Jointure avec données démographiques de Statistique Canada
-  - Calcul de densité de population par FSA
+    - Jointure avec données démographiques de Statistique Canada
+    - Calcul de densité de population par FSA
 
 ### 3.2 Ingénierie des caractéristiques
 
 - **Variables dérivées**:
 
-  - Variables polynomiales d'âge: `Age²`, `Age³`
-  - Variables d'interaction: `Age × Salaire`
-  - Variables temporelles: saison d'invalidité, jour de la semaine
+    - Variables polynomiales d'âge: `Age²`, `Age³`
+    - Variables d'interaction: `Age × Salaire`
+    - Variables temporelles: saison d'invalidité, jour de la semaine
 
 - **Traitement textuel des descriptions d'invalidité**:
-  - Tokenization et normalisation
-  - Extraction d'entités médicales
-  - Vectorisation TF-IDF (n-grammes: 1-3)
+    - Tokenization et normalisation
+    - Extraction d'entités médicales
+    - Vectorisation TF-IDF (n-grammes: 1-3)
 
 ## 4. Modèles et performances
 
@@ -148,7 +150,7 @@ Quatre modèles de classification ont été implémentés et comparés:
 </div>
 
 | Modèle                | Exactitude | Précision | Rappel | Score F1 | AUC   | CV Score | Temps (s) |
-| --------------------- | ---------- | --------- | ------ | -------- | ----- | -------- | --------- |
+|-----------------------|------------|-----------|--------|----------|-------|----------|-----------|
 | Régression Logistique | 0.871      | 0.871     | 0.873  | 0.872    | 0.947 | 0.863    | 0.004     |
 | Arbre de Décision     | 0.983      | 0.980     | 0.986  | 0.983    | 0.991 | 0.795    | 0.004     |
 | Random Forest         | 0.997      | 1.000     | 0.994  | 0.997    | 1.000 | 0.854    | 0.068     |
@@ -293,24 +295,25 @@ async def predict(data: CaseData):
 
 - **Production**:
 
-  - Conteneurs Docker sur Kubernetes
-  - Auto-scaling basé sur la charge
-  - Haute disponibilité (99.9% uptime)
+    - Conteneurs Docker sur Kubernetes
+    - Auto-scaling basé sur la charge
+    - Haute disponibilité (99.9% uptime)
 
 - **Sécurisation**:
 
-  - Authentification par JWT
-  - Chiffrement TLS/SSL
-  - Validation des entrées
+    - Authentification par JWT
+    - Chiffrement TLS/SSL
+    - Validation des entrées
 
 - **Surveillance**:
-  - Logging centralisé (ELK Stack)
-  - Alerting automatisé
-  - Détection de drift de données
+    - Logging centralisé (ELK Stack)
+    - Alerting automatisé
+    - Détection de drift de données
 
 ## 7. Conclusion technique
 
-Le système développé a atteint un taux de prédiction extrêmement élevé (99.7% d'exactitude avec Random Forest) pour la classification des cas d'invalidité. Les principales réalisations techniques incluent:
+Le système développé a atteint un taux de prédiction extrêmement élevé (99.7% d'exactitude avec Random Forest) pour la
+classification des cas d'invalidité. Les principales réalisations techniques incluent:
 
 1. Pipeline complet de données automatisé
 2. Intégration de sources externes de données démographiques
@@ -318,4 +321,6 @@ Le système développé a atteint un taux de prédiction extrêmement élevé (9
 4. Outils d'analyse éthique et d'explicabilité
 5. Visualisations détaillées pour les utilisateurs métier
 
-Le modèle Random Forest a été sélectionné comme modèle final en raison de ses performances supérieures sur tous les indicateurs clés et de sa robustesse. Les améliorations futures incluront le développement d'un système de réentraînement automatique basé sur les nouvelles données et l'expansion des fonctionnalités API.
+Le modèle Random Forest a été sélectionné comme modèle final en raison de ses performances supérieures sur tous les
+indicateurs clés et de sa robustesse. Les améliorations futures incluront le développement d'un système de
+réentraînement automatique basé sur les nouvelles données et l'expansion des fonctionnalités API.

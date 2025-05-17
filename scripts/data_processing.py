@@ -49,10 +49,10 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
             # Lire le fichier ligne par ligne pour gérer les lignes problématiques
             with open('data/MODELING_DATA.csv', 'r', encoding='utf-8') as file:
                 lines = file.readlines()
-            
+
             # Analyser l'en-tête
             header = lines[0].strip().split(';')
-            
+
             # Analyser les lignes de données, en ignorant celles qui posent problème
             data_rows = []
             for i, line in enumerate(lines[1:], 1):
@@ -62,10 +62,10 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
                     if len(values) == len(header):
                         data_rows.append(values)
                     else:
-                        print(f"Skipping line {i+1}: expected {len(header)} fields but got {len(values)}")
+                        print(f"Skipping line {i + 1}: expected {len(header)} fields but got {len(values)}")
                 except Exception as e:
-                    print(f"Error parsing line {i+1}: {e}")
-            
+                    print(f"Error parsing line {i + 1}: {e}")
+
             # Créer le DataFrame
             claims_data = pd.DataFrame(data_rows, columns=header)
             print(f"Loaded claims data manually: {claims_data.shape[0]} rows, {claims_data.shape[1]} columns")
@@ -74,11 +74,11 @@ def load_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
             # Dernier recours: créer des données synthétiques pour les tests
             print("Creating synthetic test data")
             claims_data = create_synthetic_claims_data()
-    
+
     # Convertir les colonnes numériques de chaînes de caractères aux types appropriés
-    numerical_cols = ['An_Debut_Invalidite', 'Mois_Debut_Invalidite', 'Duree_Delai_Attente', 
+    numerical_cols = ['An_Debut_Invalidite', 'Mois_Debut_Invalidite', 'Duree_Delai_Attente',
                       'Annee_Naissance', 'Salaire_Annuel', 'Duree_Invalidite']
-    
+
     for col in numerical_cols:
         if col in claims_data.columns:
             claims_data[col] = pd.to_numeric(claims_data[col], errors='coerce')
@@ -106,7 +106,7 @@ def create_synthetic_claims_data() -> pd.DataFrame:
     print("Generating synthetic claims data for testing")
     np.random.seed(42)
     n_samples = 1000
-    
+
     # Générer des données synthétiques
     data = {
         'An_Debut_Invalidite': np.random.randint(1995, 2007, n_samples),
@@ -117,20 +117,20 @@ def create_synthetic_claims_data() -> pd.DataFrame:
         'Annee_Naissance': np.random.randint(1940, 1980, n_samples),
         'Code_Emploi': np.random.randint(1, 6, n_samples),
         'Description_Invalidite': np.random.choice([
-            'MAJOR DEPRESSION', 'BACK PAIN', 'KNEE INJURY', 'CANCER', 
+            'MAJOR DEPRESSION', 'BACK PAIN', 'KNEE INJURY', 'CANCER',
             'HEART DISEASE', 'BROKEN ARM', 'ANXIETY DISORDER'
         ], n_samples),
         'Salaire_Annuel': np.random.normal(45000, 15000, n_samples).astype(int),
         'Duree_Invalidite': np.random.gamma(5, 40, n_samples).astype(int)
     }
-    
+
     # Créer le DataFrame
     df = pd.DataFrame(data)
-    
+
     # Sauvegarder les données synthétiques pour une utilisation future
     os.makedirs('data', exist_ok=True)
     df.to_csv('data/synthetic_claims_data.csv', index=False)
-    
+
     return df
 
 
@@ -259,19 +259,19 @@ def merge_datasets(claims_data: pd.DataFrame, statcan_data: pd.DataFrame) -> pd.
         population_cols = [col for col in statcan_data.columns if 'population' in col.lower()]
         density_cols = [col for col in statcan_data.columns if 'densité' in col.lower() or 'density' in col.lower()]
         relevant_cols = ['FSA'] + population_cols + density_cols
-        
+
         # Vérifier que la colonne FSA existe
         if 'FSA' not in statcan_data.columns:
             print("FSA column not found in StatCanada data. Skipping merge and returning claims data.")
             return claims_data
-            
+
         statcan_subset = statcan_data[relevant_cols].drop_duplicates(subset=['FSA'])
     except Exception as e:
         print(f"Error in processing StatCanada data: {e}. Using a simplified approach.")
         if 'FSA' not in statcan_data.columns:
             print("FSA column not found in StatCanada data. Skipping merge and returning claims data.")
             return claims_data
-            
+
         statcan_subset = statcan_data.copy()
         if statcan_subset.shape[1] > 1:
             statcan_subset = statcan_subset.iloc[:, :5]  # Prendre seulement les premières colonnes
@@ -299,6 +299,9 @@ def feature_engineering(merged_data: pd.DataFrame) -> pd.DataFrame:
     """
     print("\nPerforming feature engineering...")
 
+    # Make a copy to avoid modifying the original
+    merged_data = merged_data.copy()
+
     # Transformations du salaire en utilisant les fonctions utils
     merged_data = utils.create_salary_categories(merged_data)
 
@@ -308,8 +311,16 @@ def feature_engineering(merged_data: pd.DataFrame) -> pd.DataFrame:
     # Créer des caractéristiques saisonnières en utilisant les fonctions utils
     merged_data = utils.create_seasonal_features(merged_data)
 
+    # Check if Description_Clean exists, if not create it
+    if 'Description_Clean' not in merged_data.columns and 'Description_Invalidite' in merged_data.columns:
+        merged_data['Description_Clean'] = merged_data['Description_Invalidite'].apply(utils.clean_text)
+
     # Caractéristiques textuelles simples (peut être étendu avec du NLP plus avancé)
-    merged_data['Description_Word_Count'] = merged_data['Description_Clean'].apply(lambda x: len(str(x).split()))
+    if 'Description_Clean' in merged_data.columns:
+        merged_data['Description_Word_Count'] = merged_data['Description_Clean'].apply(lambda x: len(str(x).split()))
+    else:
+        print("Warning: 'Description_Clean' column not found. Skipping text feature creation.")
+        merged_data['Description_Word_Count'] = 0  # Default value
 
     return merged_data
 
