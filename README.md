@@ -48,12 +48,19 @@ Le système est composé de plusieurs composants organisés dans une architectur
 │   └── generate_ethics_visualizations.py # Visualisations éthiques
 ├── output/                   # Résultats et visualisations
 │   ├── ethics/               # Visualisations et analyses éthiques
+│       ├── feature_importance_fallback.png  # Importance des caractéristiques
+│       ├── shap_summary.png  # Analyse SHAP
+│       ├── bias_analysis_*.png  # Analyses de biais
+│       └── ethics_report.md  # Rapport d'éthique
 ├── logs/                     # Journaux d'audit et de gouvernance
 ├── docker-compose.yml        # Configuration Docker Compose
 ├── setup.sh                  # Script d'installation
 ├── generate_demo_data.py     # Génération de données démo
+├── main.py                   # Script principal d'exécution du pipeline
 ├── description.md            # Description méthodologique complète
-├── report.md                 # Rapport d'analyse
+├── report.md                 # Rapport technique
+├── description_document.docx # Documentation méthodologique (Word)
+├── technical_report_final.docx # Rapport technique complet (Word)
 └── README.md                 # Documentation
 ```
 
@@ -63,6 +70,8 @@ Le système est composé de plusieurs composants organisés dans une architectur
 
 - Docker
 - Docker Compose
+- Python 3.9 ou supérieur
+- Pandoc (pour la génération de documents Word)
 
 ### Installation avec Docker
 
@@ -132,40 +141,20 @@ npm install
 npm run dev
 ```
 
-### Lancement complet en environnement local
+### Exécution du pipeline complet
 
-Pour lancer l'ensemble du projet localement sans Docker:
-
-1. Dans un premier terminal, démarrer le backend:
+Pour exécuter le pipeline de données, d'entraînement et d'évaluation:
 
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
-pip install -r requirements.txt
-uvicorn app:app --reload --host 0.0.0.0 --port 8000
+python main.py
 ```
 
-2. Dans un second terminal, démarrer le frontend:
+Options disponibles:
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-3. Accéder à l'application:
-
-   - Frontend: http://localhost:5173 (ou le port indiqué par Vite)
-   - Backend API: http://localhost:8000
-   - Documentation API: http://localhost:8000/docs
-
-4. Si nécessaire, générer des données de démonstration:
-
-```bash
-python generate_demo_data.py
-```
+- `--skip-processing` : Sauter l'étape de traitement des données
+- `--skip-training` : Sauter l'étape d'entraînement des modèles
+- `--skip-kpi` : Sauter l'étape de calcul des KPIs
+- `--skip-visualization` : Sauter l'étape de génération des visualisations
 
 ## Utilisation
 
@@ -200,30 +189,67 @@ curl -X POST "http://localhost:8000/predict" \
 
 ## Performances du Modèle
 
-Le système atteint les performances suivantes:
+Le système atteint les performances suivantes avec le modèle Random Forest:
 
-- **Exactitude (Accuracy)** : 100.0%
+- **Exactitude (Accuracy)** : 99.7%
 - **Précision (Precision)** : 100.0%
-- **Rappel (Recall)** : 100.0%
-- **Score F1** : 100.0%
+- **Rappel (Recall)** : 99.4%
+- **Score F1** : 99.7%
+- **AUC** : 100.0%
 
 Ces performances dépassent largement les objectifs initiaux de 60% et les objectifs améliorés de 80% d'attributions correctes.
 
-## Gestion des Conteneurs
+## Documentation Générée
 
-- **Démarrer les services**: `docker-compose up -d`
-- **Arrêter les services**: `docker-compose down`
-- **Voir les journaux**: `docker-compose logs`
-- **Reconstruire les services**: `docker-compose build`
+### Documents Word
 
-## Documentation
+Deux documents Word complets ont été générés pour une utilisation professionnelle:
 
-- **Rapport d'analyse**: [rapport.md](report.md)
-- **Documentation de l'API**: http://localhost:8000/docs
+- **Description Méthodologique** (`description_document.docx`): Document détaillant le contexte d'affaires, les objectifs et la méthodologie
+- **Rapport Technique** (`technical_report_final.docx`): Rapport complet avec toutes les visualisations, analyses de performances et résultats techniques
+
+Pour regénérer ces documents à partir des fichiers Markdown:
+
+```bash
+pip install pandoc
+pandoc description.md -o description_document.docx --toc --toc-depth=3
+pandoc technical_report_pandoc.md -o technical_report_final.docx --toc --toc-depth=3
+```
+
+### Rapports
+
+- **Description Méthodologique**: [description.md](description.md)
+- **Rapport Technique**: [report.md](report.md)
+- **Rapport d'Éthique**: [output/ethics/ethics_report.md](output/ethics/ethics_report.md)
+- **Documentation API**: http://localhost:8000/docs
+
+## Visualisations Disponibles
+
+Le projet génère automatiquement de nombreuses visualisations:
+
+### Analyses de Données
+
+- Distribution des classes cibles
+- Matrices de corrélation
+- Visualisations des caractéristiques importantes
+
+### Performances des Modèles
+
+- Courbes ROC de comparaison
+- Matrices de confusion
+- Graphiques radar des performances
+- Comparaisons des modèles
+
+### Analyses Éthiques
+
+- Importance des caractéristiques (feature importance)
+- Visualisations SHAP pour l'explicabilité
+- Analyses de biais par groupe démographique
+- Exemples d'anonymisation des données
 
 ## Auteurs
 
-Développé pour le cours d'IA appliquée dans le cadre d'un projet académique.
+Développé par Tolotra RAHARISON (2584264) pour le cours d'IA appliquée au CEGEP Sainte-Foy.
 
 ## Licence
 
@@ -247,9 +273,3 @@ Le système intègre plusieurs mécanismes pour garantir une utilisation éthiqu
 
 - **Journal d'audit**: Enregistrement de toutes les prédictions et leurs justifications
 - **Surveillance continue**: Détection automatique de la dérive des données et des performances
-
-Pour plus de détails, consultez:
-
-- Le module `scripts/ethics_governance.py`
-- Le rapport d'éthique généré dans `output/ethics/ethics_report.md`
-- La section dédiée dans `report.md`
